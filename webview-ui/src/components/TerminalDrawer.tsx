@@ -2,7 +2,7 @@ import type { MouseEvent as ReactMouseEvent } from 'react';
 
 import { TERMINAL_DRAWER_RESIZE_HANDLE_PX } from '../constants.js';
 import type { TerminalConnectionStatus } from '../terminal/terminalClient.js';
-import type { AgentAppearance, TabStatus } from './AgentCard.js';
+import type { AgentAppearance, AgentCardLabel, TabStatus } from './AgentCard.js';
 import { AgentCardBar } from './AgentCardBar.js';
 import { TerminalPaneStack } from './TerminalPaneStack.js';
 import { Button } from './ui/Button.js';
@@ -26,6 +26,8 @@ interface TerminalDrawerProps {
   getAppearance: (agentId: number) => AgentAppearance;
   /** An agent's tab status dot (null until first activity). */
   statusFor: (agentId: number) => TabStatus | null;
+  /** An agent's card name + activity. */
+  labelFor: (agentId: number) => AgentCardLabel;
   onStatusChange: (agentId: number, status: TerminalConnectionStatus) => void;
 }
 
@@ -53,6 +55,7 @@ export function TerminalDrawer({
   onResizeStart,
   getAppearance,
   statusFor,
+  labelFor,
   onStatusChange,
 }: TerminalDrawerProps) {
   if (agentIds.length === 0) return null;
@@ -66,6 +69,7 @@ export function TerminalDrawer({
         activeAgentId={shownAgentId}
         getAppearance={getAppearance}
         statusFor={statusFor}
+        labelFor={labelFor}
         onSelect={onSelectAgent}
         onClose={onCloseAgent}
       />

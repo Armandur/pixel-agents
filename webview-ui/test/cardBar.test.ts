@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { cardVariant, mergeOrder, reorderByPointer } from '../src/components/cardBar.js';
+import {
+  cardVariant,
+  matchesCardFilter,
+  mergeOrder,
+  reorderByPointer,
+} from '../src/components/cardBar.js';
 
 describe('cardVariant', () => {
   it('the showing pane wins over the selected character', () => {
@@ -39,5 +44,26 @@ describe('reorderByPointer', () => {
   it('skips cards that are not laid out', () => {
     const partial = (id: number) => (id === 2 ? null : mid(id));
     expect(reorderByPointer([1, 2, 3], 1, partial, 200)).toEqual([2, 1, 3]);
+  });
+});
+
+describe('matchesCardFilter', () => {
+  const all = { query: '', hideIdle: false };
+
+  it('matches the name case-insensitively, ignoring surrounding space', () => {
+    expect(
+      matchesCardFilter({ name: 'svky.se', status: 'working' }, { ...all, query: ' SVKY ' }),
+    ).toBe(true);
+    expect(matchesCardFilter({ name: 'infra', status: 'working' }, { ...all, query: 'svky' })).toBe(
+      false,
+    );
+  });
+
+  it('hide-idle drops idle agents and agents with no activity yet, keeps attention', () => {
+    const hide = { query: '', hideIdle: true };
+    expect(matchesCardFilter({ name: 'a', status: 'idle' }, hide)).toBe(false);
+    expect(matchesCardFilter({ name: 'a', status: null }, hide)).toBe(false);
+    expect(matchesCardFilter({ name: 'a', status: 'attention' }, hide)).toBe(true);
+    expect(matchesCardFilter({ name: 'a', status: 'working' }, hide)).toBe(true);
   });
 });

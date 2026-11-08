@@ -18,6 +18,15 @@ export function useEditorKeyboard(
   useEffect(() => {
     if (!isEditMode) return;
     const handler = (e: KeyboardEvent) => {
+      // Keys typed into a text field (the agent-list filter, a modal's input)
+      // belong to that field: Backspace there must not delete furniture.
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
+      ) {
+        return;
+      }
       if (e.key === 'Escape') {
         // Multi-stage Esc: deselect item → close tool → deselect placed → close editor
         if (editorState.activeTool === EditTool.COLOR_PICK) {

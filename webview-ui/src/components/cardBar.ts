@@ -53,3 +53,15 @@ export function reorderByPointer(
   }
   return [...others.slice(0, insertAt), dragId, ...others.slice(insertAt)];
 }
+
+/** The card-bar filter: a case-insensitive text match on the card's name,
+ *  and optionally only agents that are not idle. An agent with no activity
+ *  yet (status null, typical of adopted sessions) counts as idle. */
+export function matchesCardFilter(
+  { name, status }: { name: string; status: string | null },
+  { query, hideIdle }: { query: string; hideIdle: boolean },
+): boolean {
+  if (hideIdle && (status === null || status === 'idle')) return false;
+  const q = query.trim().toLowerCase();
+  return q === '' || name.toLowerCase().includes(q);
+}

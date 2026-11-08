@@ -1,13 +1,24 @@
 import type { MouseEvent as ReactMouseEvent } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import type { AgentActivity, AgentAppearance, TabStatus } from '../components/AgentCard.js';
+import type {
+  AgentActivity,
+  AgentAppearance,
+  AgentCardLabel,
+  TabStatus,
+} from '../components/AgentCard.js';
 import {
+  providerBadge,
   TERMINAL_DRAWER_DEFAULT_WIDTH_PX,
   TERMINAL_DRAWER_MAX_WIDTH_RATIO,
   TERMINAL_DRAWER_MIN_WIDTH_PX,
   TERMINAL_SIDEBAR_WIDTH_PX,
 } from '../constants.js';
+import {
+  agentDisplayName,
+  characterActivityText,
+  IDLE_ACTIVITY_TEXT,
+} from '../office/activityText.js';
 import type { OfficeState } from '../office/engine/officeState.js';
 import type { ToolActivity } from '../office/types.js';
 import type { TerminalConnectionStatus } from '../terminal/terminalClient.js';
@@ -51,6 +62,8 @@ export interface TerminalDrawerController {
   /** Card status dot: 'disconnected' (red) for a terminal whose socket
    *  dropped, otherwise the agent's activity; null before its first activity. */
   statusFor: (agentId: number) => TabStatus | null;
+  /** Card name + activity, the same activity text the office overlay shows. */
+  labelFor: (agentId: number) => AgentCardLabel;
   /** Each TerminalPane reports its socket state here. */
   onStatusChange: (agentId: number, status: TerminalConnectionStatus) => void;
 }
@@ -192,6 +205,24 @@ export function useTerminalDrawer({
     [agentSeenActivity, agentTools, agentStatuses, agentAwaitingInput],
   );
 
+  // Reads the character's live state, like the overlay does. The cards
+  // re-render on the same React state changes (agentTools, agentStatuses)
+  // that accompany every character mutation.
+  const labelFor = useCallback(
+    (id: number): AgentCardLabel => {
+      const ch = getOfficeState().characters.get(id);
+      return {
+        // Same "Claude · infra" origin line as the overlay, so the filter
+        // also matches on the provider.
+        name: [providerBadge(ch?.providerId)?.label, agentDisplayName(id, ch)]
+          .filter(Boolean)
+          .join(' · '),
+        activity: ch ? characterActivityText(ch, agentTools[id]) : IDLE_ACTIVITY_TEXT,
+      };
+    },
+    [getOfficeState, agentTools],
+  );
+
   const onStatusChange = useCallback((agentId: number, status: TerminalConnectionStatus) => {
     setConnStatuses((prev) => (prev[agentId] === status ? prev : { ...prev, [agentId]: status }));
   }, []);
@@ -220,6 +251,7 @@ export function useTerminalDrawer({
     onResizeStart,
     getAppearance,
     statusFor,
+    labelFor,
     onStatusChange,
   };
 }

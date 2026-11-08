@@ -11,6 +11,12 @@ export interface AgentAppearance {
   providerId?: string;
 }
 
+/** The text beside a desktop card's mug shot: who the agent is and what it does. */
+export interface AgentCardLabel {
+  name: string;
+  activity: string;
+}
+
 /** Agent activity reflected by the tab's status dot. */
 export type AgentActivity = 'idle' | 'working' | 'attention';
 
@@ -35,6 +41,9 @@ interface AgentCardProps {
   variant: CardVariant;
   appearance: AgentAppearance;
   status: TabStatus | null;
+  /** Name + activity beside the mug shot. Omitted on mobile, whose cards are
+   *  mug shots only. */
+  label?: AgentCardLabel;
   /** When false the × is invisible (not removed — the card keeps its width so
    *  the bar doesn't reflow). Mobile only shows it on the active terminal tab
    *  to keep a stray tap from killing an agent. */
@@ -51,6 +60,7 @@ export function AgentCard({
   variant,
   appearance,
   status,
+  label,
   showClose = true,
   onSelect,
   onClose,
@@ -58,7 +68,7 @@ export function AgentCard({
   const badge = providerBadge(appearance.providerId);
   return (
     <div
-      className={`pointer-events-auto flex items-stretch gap-1 p-1 cursor-pointer border-2 shrink-0 ${CARD_VARIANT[variant]}`}
+      className={`pointer-events-auto flex items-stretch gap-1 p-1 cursor-pointer border-2 shrink-0 ${label ? 'w-full' : ''} ${CARD_VARIANT[variant]}`}
       onClick={() => onSelect(agentId)}
       title={badge ? `Agent ${agentId} (${badge.label})` : `Agent ${agentId}`}
     >
@@ -72,6 +82,20 @@ export function AgentCard({
           />
         )}
       </div>
+      {label && (
+        <div
+          className="flex flex-col justify-center gap-2 min-w-0 flex-1 px-2 leading-none"
+          data-testid="agent-card-label"
+          title={`${label.name}: ${label.activity}`}
+        >
+          <span className="text-2xs text-text overflow-hidden text-ellipsis whitespace-nowrap">
+            {label.name}
+          </span>
+          <span className="text-2xs text-text-muted overflow-hidden text-ellipsis whitespace-nowrap">
+            {label.activity}
+          </span>
+        </div>
+      )}
       {/* Close on top, status dot at the bottom, both centred over the
           same column beside the mug shot. */}
       <div className="flex flex-col items-center justify-between shrink-0">

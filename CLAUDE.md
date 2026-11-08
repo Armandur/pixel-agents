@@ -84,8 +84,8 @@ webview-ui/                          React 19 + Canvas UI (depends only on core/
     components/                      React UI (toolbars, modals, settings)
       BottomToolbar.tsx, ZoomControls.tsx, SettingsModal.tsx, InfoModal.tsx,
       Tooltip.tsx, DebugView.tsx, ui/Button.tsx, ...
-      AgentCard.tsx, AgentCardBar.tsx  Agent cards (mug shot + status dot); the right-edge bar on desktop/VS Code
-      cardBar.ts                     Pure card-bar rules: cardVariant, mergeOrder, reorderByPointer (Node-tested)
+      AgentCard.tsx, AgentCardBar.tsx  Agent cards (mug shot + status dot; name + activity on desktop); the right-edge bar on desktop/VS Code, with a name filter and a hide-idle toggle (list only)
+      cardBar.ts                     Pure card-bar rules: cardVariant, mergeOrder, reorderByPointer, matchesCardFilter (Node-tested)
       TerminalDrawer.tsx             Desktop standalone: right-docked panel, cards as tabs
       TerminalPaneStack.tsx          Every agent's TerminalPane mounted, the shown one visible (both shells)
       TerminalPane.tsx               One xterm bound to one agent's PTY
@@ -123,6 +123,7 @@ webview-ui/                          React 19 + Canvas UI (depends only on core/
       useKeyboardViewport.ts         Samples the viewport: keyboard open (key bar) + iOS shell clamp height
     office/
       types.ts                       OfficeLayout, Character, etc. + re-exports constants
+      activityText.ts                getActivityText + agentDisplayName: the ONE activity label the overlay and the agent cards share (pure)
       toolUtils.ts                   STATUS_TO_TOOL mapping, extractToolName (DOM-free; defaultZoom lives in useEditorActions)
       projection.ts                  World→screen math shared by renderer + DOM overlays (mapOffset, overlayProjection)
       colorize.ts                    Colorize (grayscale→HSL) + Adjust (HSL shift)

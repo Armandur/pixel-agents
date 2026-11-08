@@ -362,10 +362,9 @@ export const TERMINAL_DRAWER_MIN_WIDTH_PX = 320;
 /** Clamp for the drag: never wider than this fraction of the window. */
 export const TERMINAL_DRAWER_MAX_WIDTH_RATIO = 0.8;
 /** Width of the always-visible agent-card bar overlaying the office's right
- *  edge — fits the toggle handle and the stacked agent cards (40px mug shot +
- *  16px close/status column + card chrome ≈ 63px, plus a little air each
- *  side). */
-export const TERMINAL_SIDEBAR_WIDTH_PX = 72;
+ *  edge — fits the filter row and the stacked agent cards (40px mug shot +
+ *  name/activity column + 16px close/status column + card chrome). */
+export const TERMINAL_SIDEBAR_WIDTH_PX = 260;
 /** Grab width of the drag handle on the panel's left edge. */
 export const TERMINAL_DRAWER_RESIZE_HANDLE_PX = 6;
 
