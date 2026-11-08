@@ -77,6 +77,14 @@ export const CONVERSATION_WAIT_SEC = 8;
 /** CSS px the talk bubble sits above the point the activity label hangs from,
  *  so it clears the label instead of covering it. */
 export const CONVERSATION_BUBBLE_LIFT_PX = 40;
+/** Idle this long (since agentIdleSince) and an agent leaves its desk for the lounge. */
+export const LOUNGE_IDLE_SEC = 300;
+/** How long a lounging agent sits on a lounge seat before doing something else. */
+export const LOUNGE_SIT_MIN_SEC = 30;
+export const LOUNGE_SIT_MAX_SEC = 90;
+/** How long it stands (strolling or with another agent) before moving on. */
+export const LOUNGE_STAND_MIN_SEC = 8;
+export const LOUNGE_STAND_MAX_SEC = 20;
 /** A crowned agent's name on its card. */
 export const CROWNED_NAME_COLOR = '#ffd700';
 /** Badge size and offset from the sprite's bottom-right corner, in sprite pixels. */

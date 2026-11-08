@@ -148,6 +148,7 @@ webview-ui/                          React 19 + Canvas UI (depends only on core/
       engine/
         characters.ts                Character FSM (idle/walk/type) + wander AI; stepAlongPath (one frame of walking) + walkFrame (with the walk animation, for walks outside the FSM)
         conversation.ts              Agent-to-agent visits (pure): requestVisit queue, visitDestination (aim at where the recipient is GOING — path end, else its seat while active, but where it stands while it is on its own visit; answering the agent visiting you = stay put — re-aimed at tile boundaries; talk starts only beside the recipient, re-aim at its live tile after CONVERSATION_WAIT_SEC), beginVisit, advanceVisit (going → talking → done; the recipient is held still only while talking), facingToward
+        lounge.ts                    The lounge (pure): agents idle >= LOUNGE_IDLE_SEC (from agentIdleSince; waiting-for-input/approval excluded) leave their desk for an Area with `role: 'lounge'` and sit (free, unassigned lounge seat; temporary claim), stroll or mingle there; turning active ends it and the FSM walks them home. planLoungeActivity takes a LoungeContext from OfficeState
         officeState.ts               Game world (layout, characters, seats, selection, subagents, consent greeter)
         gameLoop.ts                  rAF loop with delta-time cap (0.1 s)
         renderer.ts                  Canvas: tiles, z-sorted entities, overlays, edit UI

@@ -19,6 +19,8 @@ declare global {
         tileCol: number;
         tileRow: number;
         visitPhase?: 'going' | 'talking';
+        isActive: boolean;
+        loungeActivity?: 'sit' | 'stroll' | 'mingle';
       }>;
       /** The character the camera follows (null = free camera). */
       getCameraFollowId?: () => number | null;
@@ -160,6 +162,8 @@ export function installTestHooks(officeStateRef: { current: OfficeState | null }
       tileCol: ch.tileCol,
       tileRow: ch.tileRow,
       visitPhase: ch.visit?.phase,
+      isActive: ch.isActive,
+      loungeActivity: ch.lounge?.activity,
     }));
   };
 

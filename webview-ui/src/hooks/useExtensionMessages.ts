@@ -876,6 +876,7 @@ export function useExtensionMessages(
       } else if (msg.type === 'agentIdleSince') {
         const id = msg.id as number;
         const since = typeof msg.since === 'number' ? msg.since : undefined;
+        os.setAgentIdleSince(id, since);
         setAgentIdleSince((prev) => {
           if (prev[id] === since) return prev;
           const next = { ...prev };

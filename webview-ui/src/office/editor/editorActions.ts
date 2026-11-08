@@ -714,6 +714,25 @@ export function updateAreaColor(layout: OfficeLayout, label: string, color: stri
   return { ...layout, areas };
 }
 
+/** Turn an Area's lounge role on or off. No-op if the area doesn't exist or nothing changes. */
+export function setAreaRole(
+  layout: OfficeLayout,
+  label: string,
+  role: 'lounge' | undefined,
+): OfficeLayout {
+  const existing = layout.areas ?? [];
+  const idx = existing.findIndex((a) => a.label === label);
+  if (idx === -1 || existing[idx].role === role) return layout;
+  const areas = existing.map((a, i) => {
+    if (i !== idx) return a;
+    const next: AreaDefinition = { ...a };
+    if (role) next.role = role;
+    else delete next.role;
+    return next;
+  });
+  return { ...layout, areas };
+}
+
 export type ExpandDirection = 'left' | 'right' | 'up' | 'down';
 
 /**

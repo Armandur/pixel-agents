@@ -42,6 +42,15 @@ import { CharacterState, Direction, PetState, TILE_SIZE } from '../types.js';
 import { createCharacter, updateCharacter, walkFrame } from './characters.js';
 import type { VisitRequest } from './conversation.js';
 import { advanceVisit, beginVisit, requestVisit, visitDestination } from './conversation.js';
+import type { LoungeContext } from './lounge.js';
+import {
+  advanceLounge,
+  endLounge,
+  loungeTileKeys,
+  planLoungeActivity,
+  releasePartner,
+  wantsLounge,
+} from './lounge.js';
 import { advanceMatrixEffect, startMatrixEffect } from './matrixEffectState.js';
 import { createPet, updatePet } from './petEntity.js';
 import { anchorTile, closestFreeSeat } from './seatPlacement.js';
@@ -85,6 +94,10 @@ export class OfficeState {
   cameraFollowId: number | null = null;
   hoveredAgentId: number | null = null;
   private readonly crownedAgentIds = new Set<number>();
+  /** Epoch ms each idle agent went idle (agentIdleSince); absent = working. */
+  private readonly idleSinceById = new Map<number, number>();
+  /** Lounge tile keys, cached per layout object (see loungeKeys()). */
+  private loungeCache: { layout: OfficeLayout; keys: Set<string> } | null = null;
   hoveredTile: { col: number; row: number } | null = null;
   /** Maps "parentId:toolId" → sub-agent character ID (negative) */
   subagentIdMap: Map<string, number> = new Map();
@@ -1149,6 +1162,7 @@ export class OfficeState {
   private startVisit(ch: Character, req: VisitRequest): void {
     const target = this.characters.get(req.targetId);
     if (!target) return;
+    if (ch.lounge) this.leaveLounge(ch); // a message beats a coffee
     const anchor = this.visitAnchor(ch, target);
     ch.path = this.visitPath(ch, target, anchor);
     beginVisit(ch, req, anchor);
@@ -1207,6 +1221,80 @@ export class OfficeState {
     ch.state = ch.path.length > 0 ? CharacterState.WALK : CharacterState.IDLE;
   }
 
+  /** Since when an agent has been idle (agentIdleSince); undefined = working. */
+  setAgentIdleSince(id: number, since: number | undefined): void {
+    if (since === undefined) this.idleSinceById.delete(id);
+    else this.idleSinceById.set(id, since);
+  }
+
+  private loungeKeys(): Set<string> {
+    if (this.loungeCache?.layout !== this.layout) {
+      this.loungeCache = { layout: this.layout, keys: loungeTileKeys(this.layout) };
+    }
+    return this.loungeCache.keys;
+  }
+
+  /**
+   * Idle-in-the-lounge step for one character. Returns true when the lounge
+   * drove it this frame (skip the FSM), false to let the FSM run — which is
+   * also how an agent that turned active walks back to its own seat.
+   */
+  private updateLounge(ch: Character, dt: number, now: number): boolean {
+    const wants = this.loungeKeys().size > 0 && wantsLounge(ch, this.idleSinceById.get(ch.id), now);
+    if (!wants) {
+      if (ch.lounge) this.leaveLounge(ch);
+      return false;
+    }
+    if (!ch.lounge) {
+      // Don't cut a walk short; start from a standstill or a seat.
+      if (ch.state === CharacterState.WALK) return false;
+      if (!planLoungeActivity(ch, this.loungeContext(), Math.random)) return false;
+    }
+    const lounge = ch.lounge!;
+    const partner =
+      lounge.partnerId !== undefined ? this.characters.get(lounge.partnerId) : undefined;
+    if (advanceLounge(ch, dt, this.seats, partner, walkFrame, Math.random) === 'next') {
+      if (!planLoungeActivity(ch, this.loungeContext(), Math.random)) {
+        endLounge(ch);
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /** Stop lounging, turning a seated chat partner back to its seat first. */
+  private leaveLounge(ch: Character): void {
+    const partnerId = ch.lounge?.partnerId;
+    releasePartner(
+      ch,
+      partnerId !== undefined ? this.characters.get(partnerId) : undefined,
+      this.seats,
+    );
+    endLounge(ch);
+  }
+
+  /** The map, as the lounge rules see it (see planLoungeActivity). */
+  private loungeContext(): LoungeContext {
+    return {
+      keys: this.loungeKeys(),
+      characters: this.characters.values(),
+      seats: this.seats.values(),
+      walkableTiles: this.walkableTiles,
+      pathTo: (ch, col, row) => {
+        // A lounge seat is a chair tile, blocked for walking: open it (and
+        // the agent's own seat) for this one search.
+        const key = `${col},${row}`;
+        const wasBlocked = this.blockedTiles.delete(key);
+        const path = this.withOwnSeatUnblocked(ch, () =>
+          findPath(ch.tileCol, ch.tileRow, col, row, this.tileMap, this.blockedTiles),
+        );
+        if (wasBlocked) this.blockedTiles.add(key);
+        return path;
+      },
+      freeTileBeside: (col, row) => this.closestFreeWalkableTile(col, row, 1),
+    };
+  }
+
   /** Crown an agent (config crownedSessions). Remembered for an agent whose
    *  character does not exist yet: the session name can arrive before the
    *  layout has placed it, and addAgent applies it then. */
@@ -1246,6 +1334,7 @@ export class OfficeState {
       if (ch.visit?.phase === 'talking') heldForTalk.add(ch.visit.targetId);
     }
 
+    const now = Date.now();
     const toDelete: number[] = [];
     for (const ch of this.characters.values()) {
       const effect = advanceMatrixEffect(ch, dt);
@@ -1262,7 +1351,7 @@ export class OfficeState {
           const next = ch.visitQueue?.shift();
           if (next) this.startVisit(ch, next);
         }
-      } else if (!heldForTalk.has(ch.id)) {
+      } else if (!heldForTalk.has(ch.id) && !this.updateLounge(ch, dt, now)) {
         // Temporarily unblock own seat so character can pathfind to it
         this.withOwnSeatUnblocked(ch, () =>
           updateCharacter(ch, dt, this.walkableTiles, this.seats, this.tileMap, this.blockedTiles),

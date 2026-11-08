@@ -29,6 +29,7 @@ import {
   removeFurniture,
   renameArea,
   rotateFurniture,
+  setAreaRole,
   toggleFurnitureState,
   updateAreaColor,
   wallStrokeAdds,
@@ -96,6 +97,7 @@ interface EditorActions extends Omit<FurnitureColorActions, 'pickColorAt'> {
   handleRemoveArea: (label: string) => void;
   handleRenameArea: (oldLabel: string, newLabel: string) => void;
   handleAreaColorChange: (label: string, color: string) => void;
+  handleAreaRoleChange: (label: string, role: 'lounge' | undefined) => void;
 }
 
 /** Default integer zoom (device pixels per sprite pixel) for a fresh session.
@@ -330,6 +332,15 @@ export function useEditorActions(
       }
     },
     [getOfficeState, editorState, applyEdit],
+  );
+
+  const handleAreaRoleChange = useCallback(
+    (label: string, role: 'lounge' | undefined) => {
+      const layout = getOfficeState().getLayout();
+      const next = setAreaRole(layout, label, role);
+      if (next !== layout) applyEdit(next);
+    },
+    [getOfficeState, applyEdit],
   );
 
   const handleAreaColorChange = useCallback(
@@ -793,5 +804,6 @@ export function useEditorActions(
     handleRemoveArea,
     handleRenameArea,
     handleAreaColorChange,
+    handleAreaRoleChange,
   };
 }

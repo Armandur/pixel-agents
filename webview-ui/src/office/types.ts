@@ -26,6 +26,7 @@ export type TileType = (typeof TileType)[keyof typeof TileType];
 export type { ColorValue } from '../components/ui/types.js';
 import type { ColorValue } from '../components/ui/types.js';
 import type { Visit, VisitRequest } from './engine/conversation.js';
+import type { LoungeState } from './engine/lounge.js';
 
 export const CharacterState = {
   IDLE: 'idle',
@@ -146,6 +147,8 @@ export interface AreaDefinition {
   label: string;
   /** Hex color (e.g. "#ff6b6b"). RGB only — alpha applied at render time. */
   color: string;
+  /** 'lounge': idle agents gather here (see office/engine/lounge.ts). Absent = a plain Area. */
+  role?: 'lounge';
 }
 
 export interface OfficeLayout {
@@ -252,6 +255,8 @@ export interface Character {
   visit?: Visit;
   /** Further messages waiting for the current visit to end. */
   visitQueue?: VisitRequest[];
+  /** Spending idle time in the lounge (replaces the FSM while set). */
+  lounge?: LoungeState;
   /** ID of the lead agent (set on teammates) */
   leadAgentId?: number;
   /** True when lead spawns teammates via tmux (run_in_background Agent calls) */

@@ -82,6 +82,7 @@ interface EditorToolbarProps {
   onRemoveArea: (label: string) => void;
   onRenameArea: (oldLabel: string, newLabel: string) => void;
   onAreaColorChange: (label: string, color: string) => void;
+  onAreaRoleChange: (label: string, role: 'lounge' | undefined) => void;
   onAreaMappingChange: (directoryName: string, areaLabel: string, action: 'add' | 'remove') => void;
 }
 
@@ -128,6 +129,7 @@ export function EditorToolbar({
   onRemoveArea,
   onRenameArea,
   onAreaColorChange,
+  onAreaRoleChange,
   onAreaMappingChange,
 }: EditorToolbarProps) {
   const [activeCategory, setActiveCategory] = useState<FurniturePanelCategory>('desks');
@@ -455,6 +457,9 @@ export function EditorToolbar({
                   onRename={(newLabel) => onRenameArea(area.label, newLabel)}
                   onRemove={() => onRemoveArea(area.label)}
                   onColorChange={(c) => onAreaColorChange(area.label, c)}
+                  onToggleLounge={() =>
+                    onAreaRoleChange(area.label, area.role === 'lounge' ? undefined : 'lounge')
+                  }
                   directories={directories}
                   areaMappings={areaMappings}
                   onAreaMappingChange={onAreaMappingChange}
@@ -752,6 +757,7 @@ function AreaCard({
   onRename,
   onRemove,
   onColorChange,
+  onToggleLounge,
   directories,
   areaMappings,
   onAreaMappingChange,
@@ -762,6 +768,7 @@ function AreaCard({
   onRename: (newLabel: string) => void;
   onRemove: () => void;
   onColorChange: (color: string) => void;
+  onToggleLounge: () => void;
   directories: { name: string; path: string }[];
   areaMappings: Record<string, string[]>;
   onAreaMappingChange: (directoryName: string, areaLabel: string, action: 'add' | 'remove') => void;
@@ -850,6 +857,20 @@ function AreaCard({
           x
         </Button>
       </div>
+
+      {/* Lounge role: idle agents gather here (fikarummet). */}
+      <Button
+        variant={area.role === 'lounge' ? 'active' : 'default'}
+        size="sm"
+        onClick={(e) => {
+          e?.stopPropagation();
+          onToggleLounge();
+        }}
+        aria-pressed={area.role === 'lounge'}
+        title="Idle agents spend their break here"
+      >
+        {area.role === 'lounge' ? 'Lounge: on' : 'Lounge: off'}
+      </Button>
 
       <div className="flex flex-col gap-2 max-h-80 overflow-y-auto pixel-scrollbar">
         {mappedFolders.length === 0 ? (
