@@ -63,7 +63,7 @@ export function AgentCardBar({
 
   return (
     <div
-      className="relative z-30 h-full shrink-0 flex flex-col items-center gap-4 p-4 overflow-y-auto pointer-events-none"
+      className="relative z-30 h-full shrink-0 flex flex-col gap-4 p-4 pointer-events-none"
       style={{ width: TERMINAL_SIDEBAR_WIDTH_PX, marginLeft: -TERMINAL_SIDEBAR_WIDTH_PX }}
     >
       <div className="pointer-events-auto flex w-full gap-2 shrink-0">
@@ -86,22 +86,30 @@ export function AgentCardBar({
           {hideIdle ? 'Show idle' : 'Hide idle'}
         </Button>
       </div>
-      {shown.map((agentId) => (
-        <AgentCard
-          key={agentId}
-          agentId={agentId}
-          variant={cardVariant(agentId, { activeId: activeAgentId, focusedId: focusedAgentId })}
-          appearance={getAppearance(agentId)}
-          status={statusFor(agentId)}
-          label={labelFor(agentId)}
-          onSelect={onSelect}
-          onClose={onClose}
-          onHover={onHover}
-        />
-      ))}
-      {shown.length === 0 && (
-        <span className="pointer-events-auto text-2xs text-text-muted">No matching agents</span>
-      )}
+      {/* The cards scroll on their own under the fixed filter row. No flex-1:
+          the list shrinks to its cards, so the office below the last card
+          stays clickable; only when the cards overflow does it scroll. */}
+      <div
+        className="pixel-scrollbar pointer-events-auto min-h-0 overflow-y-auto flex flex-col gap-4"
+        data-testid="agent-card-list"
+      >
+        {shown.map((agentId) => (
+          <AgentCard
+            key={agentId}
+            agentId={agentId}
+            variant={cardVariant(agentId, { activeId: activeAgentId, focusedId: focusedAgentId })}
+            appearance={getAppearance(agentId)}
+            status={statusFor(agentId)}
+            label={labelFor(agentId)}
+            onSelect={onSelect}
+            onClose={onClose}
+            onHover={onHover}
+          />
+        ))}
+        {shown.length === 0 && (
+          <span className="text-2xs text-text-muted text-center">No matching agents</span>
+        )}
+      </div>
     </div>
   );
 }
