@@ -1,7 +1,7 @@
 import type { ColorValue } from '../../components/ui/types.js';
 import { DEFAULT_NEUTRAL_COLOR } from '../../constants.js';
 import { getCatalogEntry, getRotatedType, getToggledType } from '../layout/furnitureCatalog.js';
-import { getPlacementBlockedTiles } from '../layout/layoutSerializer.js';
+import { firstOccupiedRow, getPlacementBlockedTiles } from '../layout/layoutSerializer.js';
 import type {
   AreaDefinition,
   CarpetTile,
@@ -512,10 +512,11 @@ export function canPlaceFurniture(
     }
   }
 
-  // Check overlap — also skip the NEW item's own background rows
-  const newBgRows = entry.backgroundTiles || 0;
+  // Check overlap — also skip the NEW item's own background rows (and a wall
+  // item's upper rows, which hang on the wall face; see firstOccupiedRow)
+  const newFirstRow = firstOccupiedRow(entry);
   for (let dr = 0; dr < entry.footprintH; dr++) {
-    if (dr < newBgRows) continue; // new item's background rows can overlap existing items
+    if (dr < newFirstRow) continue; // these rows can overlap existing items
     if (row + dr < 0) continue; // row above map (wall items extending upward)
     for (let dc = 0; dc < entry.footprintW; dc++) {
       const key = `${col + dc},${row + dr}`;

@@ -101,6 +101,21 @@ export function layoutToFurnitureInstances(furniture: PlacedFurniture[]): Furnit
 
 /** Get all tiles blocked by furniture footprints, optionally excluding a set of tiles.
  *  Skips top backgroundTiles rows so characters can walk through them. */
+/**
+ * The first footprint row an item actually occupies. Background rows are free
+ * to walk and place over; a wall item occupies only its bottom row, the wall
+ * tile itself — the rows above hang on the wall's face (which is drawn over
+ * the floor row in front of the wall), so a TV or painting on a wall in the
+ * middle of the office neither blocks the floor in front nor is blocked by it.
+ */
+export function firstOccupiedRow(entry: {
+  footprintH: number;
+  backgroundTiles?: number;
+  canPlaceOnWalls?: boolean;
+}): number {
+  return entry.canPlaceOnWalls ? entry.footprintH - 1 : entry.backgroundTiles || 0;
+}
+
 export function getBlockedTiles(
   furniture: PlacedFurniture[],
   excludeTiles?: Set<string>,
@@ -109,9 +124,9 @@ export function getBlockedTiles(
   for (const item of furniture) {
     const entry = getCatalogEntry(item.type);
     if (!entry) continue;
-    const bgRows = entry.backgroundTiles || 0;
+    const firstRow = firstOccupiedRow(entry);
     for (let dr = 0; dr < entry.footprintH; dr++) {
-      if (dr < bgRows) continue; // skip background rows — characters can walk through
+      if (dr < firstRow) continue; // background rows / a wall item's upper rows — walkable
       for (let dc = 0; dc < entry.footprintW; dc++) {
         const key = `${item.col + dc},${item.row + dr}`;
         if (excludeTiles && excludeTiles.has(key)) continue;
@@ -136,9 +151,9 @@ export function getPlacementBlockedTiles(
     if (excluded?.has(item.uid)) continue;
     const entry = getCatalogEntry(item.type);
     if (!entry) continue;
-    const bgRows = entry.backgroundTiles || 0;
+    const firstRow = firstOccupiedRow(entry);
     for (let dr = 0; dr < entry.footprintH; dr++) {
-      if (dr < bgRows) continue; // skip background rows
+      if (dr < firstRow) continue; // background rows / a wall item's upper rows
       for (let dc = 0; dc < entry.footprintW; dc++) {
         tiles.add(`${item.col + dc},${item.row + dr}`);
       }

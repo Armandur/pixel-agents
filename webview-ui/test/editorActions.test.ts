@@ -13,9 +13,10 @@ import assert from 'node:assert/strict';
 
 import { beforeAll, describe, test } from 'vitest';
 
-import { rotateFurniture } from '../src/office/editor/editorActions.js';
+import { canPlaceFurniture, rotateFurniture } from '../src/office/editor/editorActions.js';
 import type { LoadedAssetData } from '../src/office/layout/furnitureCatalog.js';
 import { buildDynamicCatalog } from '../src/office/layout/furnitureCatalog.js';
+import { getBlockedTiles } from '../src/office/layout/layoutSerializer.js';
 import type { OfficeLayout, PlacedFurniture } from '../src/office/types.js';
 import { TileType } from '../src/office/types.js';
 
@@ -70,6 +71,8 @@ beforeAll(() => {
     }),
     asset('COFFEE', 1, 1, { canPlaceOnSurfaces: true }),
     asset('WOODEN_CHAIR_FRONT', 1, 2, { backgroundTiles: 1 }),
+    asset('TV_WALL', 3, 2, { canPlaceOnWalls: true }),
+    asset('TABLE_2X2', 2, 2),
   ];
   const sprites = Object.fromEntries(catalog.map((a) => [a.id, [['']]]));
   assert.ok(buildDynamicCatalog({ catalog, sprites }));
@@ -126,5 +129,33 @@ describe('rotateFurniture validates the whole desk group', () => {
       { uid: 'pc', type: 'PC_FRONT_OFF', col: 4, row: 10 },
     ]);
     assert.equal(rotateFurniture(layout, 'desk', 'cw'), layout);
+  });
+});
+
+describe('wall items on a wall in the middle of the office', () => {
+  // A wall across row 5, floor above and below; a 2x2 table on rows 3-4 sits
+  // right in front of (above) the wall.
+  function middleWall(): OfficeLayout {
+    const layout = floorLayout(10, 10, [{ uid: 'table', type: 'TABLE_2X2', col: 1, row: 3 }]);
+    for (let c = 0; c < 10; c++) layout.tiles[5 * 10 + c] = TileType.WALL;
+    return layout;
+  }
+
+  test('a 3x2 TV fits with its bottom row on the wall even with furniture on the floor row above', () => {
+    // TV rows 4-5: row 4 is the table's lower row, but the TV only occupies the wall row.
+    assert.equal(canPlaceFurniture(middleWall(), 'TV_WALL', 1, 4), true);
+  });
+
+  test("a wall item's upper row neither blocks walking nor placing on the floor in front", () => {
+    const layout = middleWall();
+    layout.furniture = [{ uid: 'tv', type: 'TV_WALL', col: 4, row: 4 }];
+    const blocked = getBlockedTiles(layout.furniture);
+    assert.equal(blocked.has('4,4'), false, 'floor row in front stays walkable');
+    assert.equal(blocked.has('4,5'), true, 'the wall row is the item');
+    assert.equal(canPlaceFurniture(layout, 'TABLE_2X2', 4, 3), true, 'a table can stand in front');
+  });
+
+  test('the bottom row must still be on wall tiles', () => {
+    assert.equal(canPlaceFurniture(middleWall(), 'TV_WALL', 1, 3), false);
   });
 });
