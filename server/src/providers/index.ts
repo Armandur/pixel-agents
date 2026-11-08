@@ -13,14 +13,20 @@
 
 import type { HookProvider } from '../../../core/src/provider.js';
 import { claudeProvider } from './hook/claude/claude.js';
+import { codexProvider } from './hook/codex/codex.js';
 
-export { claudeProvider };
+export { claudeProvider, codexProvider };
 export { copyHookScript } from './hook/claude/claudeHookInstaller.js';
 
 /** Every bundled hook provider, in registration order. The consent gate loops
  *  over this at the webviewReady handshake (one ask per provider that needs
  *  one) and `hooksConsentResponse` resolves its provider id against it. */
 export const hookProviders: readonly HookProvider[] = [claudeProvider];
+
+/** Providers whose events are accepted on /api/hooks/:providerId but whose hooks Pixel Agents never installs
+ *  (observe-only, fed by an external forwarder). Kept out of `hookProviders` so the consent gate and the
+ *  Settings toggle never offer to install them. */
+export const observedProviders: readonly HookProvider[] = [codexProvider];
 
 /** Resolve a wire-supplied provider id, or undefined for an unknown one —
  *  the caller writes nothing on undefined (fail-closed, like a junk choice). */

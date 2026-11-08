@@ -19,6 +19,7 @@ import {
   listDirectories,
 } from './directories.js';
 import { collectDirectorySuggestions } from './directorySuggestions.js';
+import { forwardFocus } from './focusForwarder.js';
 import { hostDirectory } from './hostDirectory.js';
 import { readLayoutFromFile, writeLayoutToFile } from './layoutPersistence.js';
 import type { ConsentEffects } from './providers/hook/consentExecutor.js';
@@ -359,10 +360,15 @@ export function handleClientMessage(
       });
       break;
 
+    case 'focusAgent':
+      // The drawer tab is focused client-side. The server's part is optional:
+      // forward the click to an external endpoint (PIXEL_AGENTS_FOCUS_URL), e.g.
+      // one that switches the operator's tmux pane to this session.
+      forwardFocus(store.get(msg.id as number));
+      break;
+
     default:
-      // focusAgent is handled entirely client-side in standalone (it focuses the
-      // drawer tab, which the server has no say in). exportLayout / importLayout
-      // still require IDE-specific handling.
+      // exportLayout / importLayout still require IDE-specific handling.
       break;
   }
 }
@@ -592,6 +598,7 @@ function handleWebviewReady(send: WsSend, ctx: ClientMessageContext): void {
   const agentIds: number[] = [];
   const directoryNames: Record<number, string> = {};
   const externalAgents: Record<number, boolean> = {};
+  const providerIds: Record<number, string> = {};
   const persistedSeats = adapter?.loadSeats() ?? {};
   const agentMeta: Record<number, { palette?: number; hueShift?: number; seatId?: string }> = {};
   for (const [id, agent] of store) {
@@ -601,6 +608,9 @@ function handleWebviewReady(send: WsSend, ctx: ClientMessageContext): void {
     }
     if (agent.isExternal) {
       externalAgents[id] = true;
+    }
+    if (agent.providerId) {
+      providerIds[id] = agent.providerId;
     }
     const persisted = persistedSeats[String(id)];
     agentMeta[id] = {
@@ -615,6 +625,7 @@ function handleWebviewReady(send: WsSend, ctx: ClientMessageContext): void {
     agentMeta,
     directoryNames,
     externalAgents,
+    providerIds,
   });
 
   // 7. Layout last (see step 3): flushes the webview's buffered existingAgents

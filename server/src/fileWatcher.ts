@@ -1024,6 +1024,7 @@ export function adoptExternalSessionFromHook(
 
   persistAgents: () => void,
   onAgentCreated?: (agent: AgentState) => void,
+  providerId?: string,
 ): void {
   if (transcriptPath) {
     // File-based provider (Claude, Codex): adopt with JSONL file watching
@@ -1064,6 +1065,7 @@ export function adoptExternalSessionFromHook(
     if (adoptedAgent) {
       adoptedAgent.sessionId = sessionId;
       adoptedAgent.hookDelivered = true;
+      adoptedAgent.providerId = providerId;
       onAgentCreated?.(adoptedAgent);
     }
   } else {
@@ -1081,6 +1083,7 @@ export function adoptExternalSessionFromHook(
       hooksOnly: true,
       lastDataAt: Date.now(),
       directoryName,
+      providerId,
     });
     assignPaletteIfNeeded(agent, agents);
     agents.set(id, agent);

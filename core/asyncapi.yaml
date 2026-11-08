@@ -204,6 +204,9 @@ components:
         hueShift:
           type: integer
           description: Server-assigned hue shift in degrees (0-360).
+        providerId:
+          type: string
+          description: Hook provider that created the agent (e.g. "claude", "codex"). Absent means claude.
 
     AgentClosed:
       description: An agent has been removed from the office.
@@ -256,6 +259,11 @@ components:
           description: Map of agent ID (string) to external flag.
           additionalProperties:
             type: boolean
+        providerIds:
+          type: object
+          description: Map of agent ID (string) to hook provider id. Absent entries mean claude.
+          additionalProperties:
+            type: string
 
     AgentStatus:
       description: Active vs waiting state for an agent (drives character animation).
