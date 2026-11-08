@@ -1,8 +1,15 @@
 import { useEffect } from 'react';
 
-import { KEY_CARPET_PICK } from '../constants.js';
+import { KEY_CARPET_PICK, NUDGE_STEP_PX } from '../constants.js';
 import type { EditorState } from '../office/editor/editorState.js';
 import { EditTool } from '../office/types.js';
+
+const NUDGE_KEYS: Record<string, [number, number]> = {
+  ArrowLeft: [-1, 0],
+  ArrowRight: [1, 0],
+  ArrowUp: [0, -1],
+  ArrowDown: [0, 1],
+};
 
 export function useEditorKeyboard(
   isEditMode: boolean,
@@ -10,6 +17,7 @@ export function useEditorKeyboard(
   onDeleteSelected: () => void,
   onRotateSelected: () => void,
   onToggleState: () => void,
+  onNudgeSelected: (dx: number, dy: number) => void,
   onUndo: () => void,
   onRedo: () => void,
   onEditorTick: () => void,
@@ -81,6 +89,10 @@ export function useEditorKeyboard(
         onRotateSelected();
       } else if (e.key === 't' || e.key === 'T') {
         onToggleState();
+      } else if (e.key in NUDGE_KEYS && editorState.selectedFurnitureUid) {
+        e.preventDefault();
+        const [dx, dy] = NUDGE_KEYS[e.key];
+        onNudgeSelected(dx * NUDGE_STEP_PX, dy * NUDGE_STEP_PX);
       } else if (
         (e.key === KEY_CARPET_PICK || e.key === KEY_CARPET_PICK.toUpperCase()) &&
         editorState.activeTool === EditTool.CARPET_PAINT
@@ -108,6 +120,7 @@ export function useEditorKeyboard(
     onDeleteSelected,
     onRotateSelected,
     onToggleState,
+    onNudgeSelected,
     onUndo,
     onRedo,
     onEditorTick,

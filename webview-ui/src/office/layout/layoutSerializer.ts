@@ -46,8 +46,8 @@ export function layoutToFurnitureInstances(furniture: PlacedFurniture[]): Furnit
   for (const item of furniture) {
     const entry = getCatalogEntry(item.type);
     if (!entry) continue;
-    const x = item.col * TILE_SIZE;
-    const y = item.row * TILE_SIZE;
+    const x = item.col * TILE_SIZE + (item.nudge?.x ?? 0);
+    const y = item.row * TILE_SIZE + (item.nudge?.y ?? 0);
     const spriteH = entry.sprite.length;
     let zY = y + spriteH;
 

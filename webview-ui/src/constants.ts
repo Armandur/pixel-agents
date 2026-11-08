@@ -154,6 +154,10 @@ export const ZOOM_SCROLL_THRESHOLD = 50;
 export const PAN_MARGIN_FRACTION = 0.25;
 
 // ── Editor ───────────────────────────────────────────────────
+/** Half-tile nudge: arrow keys shift a selected item this many px, at most
+ *  NUDGE_MAX_PX from its tile (the footprint stays on whole tiles). */
+export const NUDGE_STEP_PX = 8;
+export const NUDGE_MAX_PX = 8;
 export const UNDO_STACK_MAX_SIZE = 50;
 export const LAYOUT_SAVE_DEBOUNCE_MS = 500;
 /** data-testid of the office canvas — e2e drives real editor gestures on it. */

@@ -345,6 +345,7 @@ function App() {
     editor.handleDeleteSelected,
     editor.handleRotateSelected,
     editor.handleToggleState,
+    editor.handleNudgeSelected,
     editor.handleUndo,
     editor.handleRedo,
     useCallback(() => setEditorTickForKeyboard((n) => n + 1), []),

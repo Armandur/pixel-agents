@@ -37,6 +37,7 @@ import {
   wallStrokeTile,
 } from '../office/editor/editorActions.js';
 import type { EditorState } from '../office/editor/editorState.js';
+import { nudgeFurniture } from '../office/editor/nudge.js';
 import type { OfficeState } from '../office/engine/officeState.js';
 import { isAutoTile } from '../office/layout/autoTile.js';
 import { getRotatedType, getToggledType } from '../office/layout/furnitureCatalog.js';
@@ -72,6 +73,7 @@ interface EditorActions extends Omit<FurnitureColorActions, 'pickColorAt'> {
   handleDeleteSelected: () => void;
   handleRotateSelected: () => void;
   handleToggleState: () => void;
+  handleNudgeSelected: (dx: number, dy: number) => void;
   handleUndo: () => void;
   handleRedo: () => void;
   handleReset: () => void;
@@ -449,6 +451,16 @@ export function useEditorActions(
     }
   }, [getOfficeState, editorState, applyEdit, bumpTick]);
 
+  // Arrow-key nudges of one item collapse into a single undo entry.
+  const handleNudgeSelected = useCallback(
+    (dx: number, dy: number) => {
+      const uid = editorState.selectedFurnitureUid;
+      if (!uid) return;
+      commitLayout(nudgeFurniture(getOfficeState().getLayout(), uid, dx, dy), `nudge:${uid}`);
+    },
+    [getOfficeState, editorState, commitLayout],
+  );
+
   const handleToggleState = useCallback(() => {
     // Same precedence as rotate: a selected placed item wins over the catalog
     // type, so T works with the Furniture tab open.
@@ -818,6 +830,7 @@ export function useEditorActions(
     handleFurnitureTypeChange,
     handleDeleteSelected,
     handleRotateSelected,
+    handleNudgeSelected,
     handleToggleState,
     handleUndo,
     handleRedo,

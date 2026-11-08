@@ -129,6 +129,9 @@ export interface PlacedFurniture {
   row: number;
   /** Optional color override for furniture */
   color?: ColorValue;
+  /** Visual offset in px within half a tile (see office/editor/nudge.ts).
+   *  Drawing only: footprint, blocking and seats stay on whole tiles. */
+  nudge?: { x: number; y: number };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
