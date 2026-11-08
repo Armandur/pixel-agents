@@ -44,14 +44,26 @@ export const HOVERED_OUTLINE_ALPHA = 0.5;
 /** Headless agents (adopted, no terminal to focus) render slightly translucent. */
 export const HEADLESS_CHARACTER_ALPHA = 0.5;
 
-// ── Provider badge (Codex characters) ───────────────────────
-/** Badge fill/border, drawn at the character's hip so Codex agents stand out from Claude ones. */
-export const CODEX_BADGE_FILL = '#10a37f';
-export const CODEX_BADGE_BORDER = '#0b3d30';
+// ── Provider badge ──────────────────────────────────────────
+/** Badge colours per hook provider, drawn at the character's hip and on its
+ *  agent card so Claude and Codex agents read apart at a glance. */
+export interface ProviderBadge {
+  label: string;
+  fill: string;
+  border: string;
+}
+export const PROVIDER_BADGES: Record<string, ProviderBadge> = {
+  claude: { label: 'Claude', fill: '#d97757', border: '#5a2617' },
+  codex: { label: 'Codex', fill: '#9b6bff', border: '#34205e' },
+};
+/** Agents without a provider id come from Claude (the default provider). */
+export function providerBadge(providerId: string | undefined): ProviderBadge | undefined {
+  return PROVIDER_BADGES[providerId ?? 'claude'];
+}
 /** Badge size and offset from the sprite's bottom-right corner, in sprite pixels. */
-export const CODEX_BADGE_SIZE_PX = 4;
-export const CODEX_BADGE_INSET_X_PX = 3;
-export const CODEX_BADGE_INSET_Y_PX = 9;
+export const PROVIDER_BADGE_SIZE_PX = 4;
+export const PROVIDER_BADGE_INSET_X_PX = 3;
+export const PROVIDER_BADGE_INSET_Y_PX = 9;
 export const GHOST_PREVIEW_SPRITE_ALPHA = 0.5;
 export const GHOST_PREVIEW_TINT_ALPHA = 0.25;
 export const SELECTION_DASH_PATTERN: [number, number] = [4, 3];

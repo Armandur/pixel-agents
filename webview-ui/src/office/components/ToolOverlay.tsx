@@ -19,6 +19,7 @@ import {
   OVERLAY_BUBBLE_Z_INDEX,
   OVERLAY_LABEL_SELECTED_Z_INDEX,
   OVERLAY_LABEL_Z_INDEX,
+  providerBadge,
   TEAM_LEAD_COLOR,
   TEAM_ROLE_COLOR,
   TOOL_OVERLAY_VERTICAL_OFFSET,
@@ -275,7 +276,9 @@ export function ToolOverlay({
 
         // Team info
         const teamRoleLabel = ch.isTeamLead ? 'LEAD' : ch.agentName || null;
-        const hasExtraLines = !!(ch.directoryName || ch.providerId === 'codex' || teamRoleLabel);
+        const badge = providerBadge(ch.providerId);
+        const originLabel = [badge?.label, ch.directoryName].filter(Boolean).join(' · ');
+        const hasExtraLines = !!(originLabel || teamRoleLabel);
 
         // Context gauge. Every agent gets one — lead, teammate, adopted,
         // headless — as soon as it has taken a turn. Sub-agents never do: they
@@ -327,11 +330,9 @@ export function ToolOverlay({
                   >
                     {activityText}
                   </span>
-                  {(ch.directoryName || ch.providerId === 'codex') && (
+                  {originLabel && (
                     <span className="text-2xs leading-none overflow-hidden text-ellipsis block">
-                      {ch.providerId === 'codex'
-                        ? `Codex${ch.directoryName ? ` · ${ch.directoryName}` : ''}`
-                        : ch.directoryName}
+                      {originLabel}
                     </span>
                   )}
                 </div>

@@ -1,4 +1,4 @@
-import { CODEX_BADGE_BORDER, CODEX_BADGE_FILL } from '../constants.js';
+import { providerBadge } from '../constants.js';
 import type { CardVariant } from './cardBar.js';
 import { CharacterMugShot } from './CharacterMugShot.js';
 import { Button } from './ui/Button.js';
@@ -55,19 +55,20 @@ export function AgentCard({
   onSelect,
   onClose,
 }: AgentCardProps) {
+  const badge = providerBadge(appearance.providerId);
   return (
     <div
       className={`pointer-events-auto flex items-stretch gap-1 p-1 cursor-pointer border-2 shrink-0 ${CARD_VARIANT[variant]}`}
       onClick={() => onSelect(agentId)}
-      title={appearance.providerId === 'codex' ? `Agent ${agentId} (Codex)` : `Agent ${agentId}`}
+      title={badge ? `Agent ${agentId} (${badge.label})` : `Agent ${agentId}`}
     >
       <div className="relative shrink-0">
         <CharacterMugShot palette={appearance.palette} hueShift={appearance.hueShift} />
-        {appearance.providerId === 'codex' && (
+        {badge && (
           <span
             className="absolute bottom-0 left-0 size-6 border-2"
-            style={{ background: CODEX_BADGE_FILL, borderColor: CODEX_BADGE_BORDER }}
-            aria-label="Codex"
+            style={{ background: badge.fill, borderColor: badge.border }}
+            aria-label={badge.label}
           />
         )}
       </div>

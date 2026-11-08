@@ -19,11 +19,6 @@ import {
   CARPET_DEFAULT_COLOR,
   CHARACTER_SITTING_OFFSET_PX,
   CHARACTER_Z_SORT_OFFSET,
-  CODEX_BADGE_BORDER,
-  CODEX_BADGE_FILL,
-  CODEX_BADGE_INSET_X_PX,
-  CODEX_BADGE_INSET_Y_PX,
-  CODEX_BADGE_SIZE_PX,
   DELETE_BUTTON_BG,
   FALLBACK_FLOOR_COLOR,
   GHOST_BORDER_HOVER_FILL,
@@ -37,6 +32,10 @@ import {
   HEADLESS_CHARACTER_ALPHA,
   HOVERED_OUTLINE_ALPHA,
   OUTLINE_Z_SORT_OFFSET,
+  PROVIDER_BADGE_INSET_X_PX,
+  PROVIDER_BADGE_INSET_Y_PX,
+  PROVIDER_BADGE_SIZE_PX,
+  providerBadge,
   ROTATE_BUTTON_BG,
   SEAT_AVAILABLE_COLOR,
   SEAT_BUSY_COLOR,
@@ -457,19 +456,21 @@ export function renderScene(
       },
     });
 
-    // Codex agents wear a small badge so they read apart from Claude ones at a glance.
-    if (ch.providerId === 'codex') {
-      const size = CODEX_BADGE_SIZE_PX * zoom;
-      const bx = drawX + cached.width - (CODEX_BADGE_INSET_X_PX + CODEX_BADGE_SIZE_PX) * zoom;
-      const by = drawY + cached.height - (CODEX_BADGE_INSET_Y_PX + CODEX_BADGE_SIZE_PX) * zoom;
+    // Every agent wears a small provider badge (Claude orange, Codex purple).
+    const badge = providerBadge(ch.providerId);
+    if (badge) {
+      const size = PROVIDER_BADGE_SIZE_PX * zoom;
+      const bx = drawX + cached.width - (PROVIDER_BADGE_INSET_X_PX + PROVIDER_BADGE_SIZE_PX) * zoom;
+      const by =
+        drawY + cached.height - (PROVIDER_BADGE_INSET_Y_PX + PROVIDER_BADGE_SIZE_PX) * zoom;
       drawables.push({
         zY: charZY + OUTLINE_Z_SORT_OFFSET, // just in front of its own character
         draw: (c) => {
           c.save();
           c.globalAlpha = alpha;
-          c.fillStyle = CODEX_BADGE_BORDER;
+          c.fillStyle = badge.border;
           c.fillRect(bx, by, size, size);
-          c.fillStyle = CODEX_BADGE_FILL;
+          c.fillStyle = badge.fill;
           c.fillRect(bx + zoom, by + zoom, size - 2 * zoom, size - 2 * zoom);
           c.restore();
         },
