@@ -147,7 +147,7 @@ webview-ui/                          React 19 + Canvas UI (depends only on core/
         tileMap.ts                   Walkability, BFS pathfinding
       engine/
         characters.ts                Character FSM (idle/walk/type) + wander AI; stepAlongPath (one frame of walking) + walkFrame (with the walk animation, for walks outside the FSM)
-        conversation.ts              Agent-to-agent visits (pure): requestVisit queue, visitDestination (aim at where the recipient is GOING — path end, else its seat while active — re-aimed at tile boundaries), beginVisit, advanceVisit (going → talking → done; the recipient is held still only while talking), facingToward
+        conversation.ts              Agent-to-agent visits (pure): requestVisit queue, visitDestination (aim at where the recipient is GOING — path end, else its seat while active, but where it stands while it is on its own visit; answering the agent visiting you = stay put — re-aimed at tile boundaries; talk starts only beside the recipient, re-aim at its live tile after CONVERSATION_WAIT_SEC), beginVisit, advanceVisit (going → talking → done; the recipient is held still only while talking), facingToward
         officeState.ts               Game world (layout, characters, seats, selection, subagents, consent greeter)
         gameLoop.ts                  rAF loop with delta-time cap (0.1 s)
         renderer.ts                  Canvas: tiles, z-sorted entities, overlays, edit UI

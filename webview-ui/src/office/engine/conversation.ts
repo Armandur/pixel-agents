@@ -1,4 +1,8 @@
-import { CONVERSATION_QUEUE_MAX, CONVERSATION_TALK_SEC } from '../../constants.js';
+import {
+  CONVERSATION_QUEUE_MAX,
+  CONVERSATION_TALK_SEC,
+  CONVERSATION_WAIT_SEC,
+} from '../../constants.js';
 import type { Character, Direction } from '../types.js';
 import { CharacterState, Direction as Dir } from '../types.js';
 
@@ -17,6 +21,10 @@ export interface Visit extends VisitRequest {
   targetPrevDir?: Direction;
   /** The recipient destination the current path leads next to (see visitDestination). */
   anchor?: { col: number; row: number };
+  /** Seconds spent at the end of the path without the recipient beside it. */
+  waited: number;
+  /** Already re-aimed at the recipient's live tile once after waiting too long. */
+  retried?: boolean;
 }
 
 /**
@@ -27,12 +35,15 @@ export interface Visit extends VisitRequest {
  * had just left.
  */
 export function visitDestination(
-  target: Pick<Character, 'path' | 'isActive' | 'tileCol' | 'tileRow'>,
+  target: Pick<Character, 'path' | 'isActive' | 'tileCol' | 'tileRow' | 'visit'>,
   seat: { seatCol: number; seatRow: number } | undefined,
 ): { col: number; row: number } {
   const last = target.path[target.path.length - 1];
   if (last) return { col: last.col, row: last.row };
-  if (target.isActive && seat) return { col: seat.seatCol, row: seat.seatRow };
+  // A recipient out on its own visit is where that visit put it, not at its
+  // seat — answering an agent that just came over must not send you to its
+  // empty chair.
+  if (!target.visit && target.isActive && seat) return { col: seat.seatCol, row: seat.seatRow };
   return { col: target.tileCol, row: target.tileRow };
 }
 
@@ -62,7 +73,7 @@ export function beginVisit(
   req: VisitRequest,
   anchor?: { col: number; row: number },
 ): void {
-  ch.visit = { ...req, phase: 'going', talkTimer: CONVERSATION_TALK_SEC, anchor };
+  ch.visit = { ...req, phase: 'going', talkTimer: CONVERSATION_TALK_SEC, anchor, waited: 0 };
   ch.state = ch.path.length > 0 ? CharacterState.WALK : CharacterState.IDLE;
   ch.moveProgress = 0;
   ch.frame = 0;
@@ -89,6 +100,16 @@ export function advanceVisit(
   if (visit.phase === 'going') {
     if (ch.path.length > 0) {
       step(ch, dt);
+      return 'going';
+    }
+    // Talk only beside the recipient itself; until it gets there, wait (the
+    // caller re-aims if it changes course or takes too long). After one
+    // re-aim, a recipient that still cannot be reached is talked to anyway.
+    const apart = Math.abs(ch.tileCol - target.tileCol) + Math.abs(ch.tileRow - target.tileRow);
+    if (apart !== 1 && !(visit.retried && visit.waited >= CONVERSATION_WAIT_SEC)) {
+      visit.waited += dt;
+      ch.state = CharacterState.IDLE;
+      ch.frame = 0;
       return 'going';
     }
     visit.phase = 'talking';

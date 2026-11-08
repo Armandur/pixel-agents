@@ -7,7 +7,11 @@ import assert from 'node:assert/strict';
 
 import { test } from 'vitest';
 
-import { CONVERSATION_QUEUE_MAX, CONVERSATION_TALK_SEC } from '../src/constants.js';
+import {
+  CONVERSATION_QUEUE_MAX,
+  CONVERSATION_TALK_SEC,
+  CONVERSATION_WAIT_SEC,
+} from '../src/constants.js';
 import { facingToward, visitDestination } from '../src/office/engine/conversation.js';
 import { OfficeState } from '../src/office/engine/officeState.js';
 import type { Character, OfficeLayout } from '../src/office/types.js';
@@ -212,4 +216,98 @@ test('the recipient holds still while being talked to, then carries on', () => {
     { col: held.col, row: held.row },
     'walks to its seat after the talk',
   );
+});
+
+/** A third agent at (col,row), seated nowhere. */
+function third(os: OfficeState, col: number, row: number): Character {
+  os.addAgent(3, 2, 0, undefined, true);
+  const ch = os.characters.get(3)!;
+  place(ch, col, row);
+  return ch;
+}
+
+test('a recipient talking to someone else is met where it stands, not at its seat', () => {
+  const { os, sender, recipient } = office();
+  third(os, 4, 7);
+  os.startConversation(2, 3, 'to the third');
+  runUntil(os, () => recipient.visit?.phase === 'talking');
+  assert.equal(recipient.visit?.phase, 'talking');
+
+  // Active with a seat far away: the old rule would send the sender there.
+  os.seats.set('far', {
+    uid: 'far',
+    seatCol: 1,
+    seatRow: 7,
+    facingDir: Direction.DOWN,
+    assigned: true,
+  });
+  recipient.seatId = 'far';
+  recipient.isActive = true;
+  const stands = { col: recipient.tileCol, row: recipient.tileRow };
+
+  os.startConversation(1, 2, 'reply');
+  assert.deepEqual(sender.visit?.anchor, stands, 'aims at the tile it stands on');
+  runUntil(os, () => sender.visit?.phase === 'talking');
+  assert.equal(sender.visit?.phase, 'talking');
+  assert.equal(distance(sender, recipient), 1);
+});
+
+test('answering the agent that came over: no walk, talk once it is beside you', () => {
+  const { os, sender, recipient } = office();
+  os.startConversation(2, 1, 'hello');
+  runUntil(os, () => recipient.visit?.phase === 'talking');
+  const at = { col: sender.tileCol, row: sender.tileRow };
+
+  os.startConversation(1, 2, 'hello back');
+  assert.deepEqual(sender.path, [], 'does not walk');
+  os.update(0.05);
+  assert.equal(sender.visit?.phase, 'talking', 'talks at once: it is already beside us');
+  assert.deepEqual({ col: sender.tileCol, row: sender.tileRow }, at);
+  assert.equal(distance(sender, recipient), 1);
+});
+
+test('the talk waits until the recipient is actually beside the sender', () => {
+  const { os, sender, recipient } = office();
+  place(sender, 7, 5);
+  place(recipient, 1, 7);
+  recipient.path = [2, 3, 4, 5, 6, 7].map((col) => ({ col, row: 7 }));
+  recipient.state = CharacterState.WALK;
+
+  os.startConversation(1, 2, 'wait for me');
+  let sawWaiting = false;
+  runUntil(os, () => {
+    if (
+      sender.visit?.phase === 'going' &&
+      sender.path.length === 0 &&
+      distance(sender, recipient) > 1
+    ) {
+      sawWaiting = true;
+    }
+    if (sender.visit?.phase === 'talking') assert.equal(distance(sender, recipient), 1);
+    return sender.visit?.phase === 'talking';
+  });
+  assert.ok(sawWaiting, 'the sender arrived first and waited');
+  assert.equal(sender.visit?.phase, 'talking');
+});
+
+test('a recipient that never arrives is re-aimed at after the wait limit', () => {
+  const { os, sender, recipient } = office();
+  // Seated and typing in place, but its assigned seat is elsewhere: its
+  // destination (the seat) is somewhere it will never walk to.
+  os.seats.set('far', {
+    uid: 'far',
+    seatCol: 1,
+    seatRow: 7,
+    facingDir: Direction.DOWN,
+    assigned: true,
+  });
+  recipient.seatId = 'far';
+  recipient.isActive = true;
+  recipient.state = CharacterState.TYPE;
+
+  os.startConversation(1, 2, 'where are you');
+  assert.deepEqual(sender.visit?.anchor, { col: 1, row: 7 });
+  runUntil(os, () => sender.visit?.phase === 'talking', 30 + CONVERSATION_WAIT_SEC);
+  assert.equal(sender.visit?.phase, 'talking');
+  assert.equal(distance(sender, recipient), 1, 'ends up beside where it really is');
 });

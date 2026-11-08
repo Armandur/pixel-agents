@@ -71,6 +71,9 @@ export const CROWN_HAIR_OVERLAP_PX = 1;
 export const CONVERSATION_TALK_SEC = 4;
 /** Messages a sender may have waiting behind its current visit. */
 export const CONVERSATION_QUEUE_MAX = 3;
+/** How long a sender waits beside the recipient's destination for it to
+ *  arrive before re-aiming at the recipient's live tile. */
+export const CONVERSATION_WAIT_SEC = 8;
 /** CSS px the talk bubble sits above the point the activity label hangs from,
  *  so it clears the label instead of covering it. */
 export const CONVERSATION_BUBBLE_LIFT_PX = 40;

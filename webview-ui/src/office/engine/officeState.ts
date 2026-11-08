@@ -5,6 +5,7 @@ import {
   CHARACTER_HIT_HALF_WIDTH,
   CHARACTER_HIT_HEIGHT,
   CHARACTER_SITTING_OFFSET_PX,
+  CONVERSATION_WAIT_SEC,
   DISMISS_BUBBLE_FAST_FADE_SEC,
   FURNITURE_ANIM_INTERVAL_SEC,
   GREETER_ID,
@@ -1148,13 +1149,23 @@ export class OfficeState {
   private startVisit(ch: Character, req: VisitRequest): void {
     const target = this.characters.get(req.targetId);
     if (!target) return;
-    const anchor = this.visitAnchor(target);
-    ch.path = this.pathNextTo(ch, anchor);
+    const anchor = this.visitAnchor(ch, target);
+    ch.path = this.visitPath(ch, target, anchor);
     beginVisit(ch, req, anchor);
   }
 
-  private visitAnchor(target: Character): { col: number; row: number } {
+  private visitAnchor(ch: Character, target: Character): { col: number; row: number } {
+    // Answering an agent that is visiting you: stay put, it is coming here.
+    if (target.visit?.targetId === ch.id) return { col: ch.tileCol, row: ch.tileRow };
     return visitDestination(target, target.seatId ? this.seats.get(target.seatId) : undefined);
+  }
+
+  private visitPath(
+    ch: Character,
+    target: Character,
+    anchor: { col: number; row: number },
+  ): Array<{ col: number; row: number }> {
+    return target.visit?.targetId === ch.id ? [] : this.pathNextTo(ch, anchor);
   }
 
   /** Path to the free walkable tile closest to `anchor` (empty if already there). */
@@ -1176,10 +1187,23 @@ export class OfficeState {
     const visit = ch.visit;
     const target = visit && this.characters.get(visit.targetId);
     if (!visit || !target || visit.phase !== 'going' || ch.moveProgress !== 0) return;
-    const anchor = this.visitAnchor(target);
-    if (visit.anchor && anchor.col === visit.anchor.col && anchor.row === visit.anchor.row) return;
+    // After one re-aim, follow where the recipient IS rather than where it
+    // was heading (heading somewhere it never reached is why we re-aimed).
+    let anchor = visit.retried
+      ? { col: target.tileCol, row: target.tileRow }
+      : this.visitAnchor(ch, target);
+    const sameAnchor =
+      visit.anchor && anchor.col === visit.anchor.col && anchor.row === visit.anchor.row;
+    if (!visit.retried && visit.waited >= CONVERSATION_WAIT_SEC) {
+      // Waited too long beside where it was heading: aim at where it IS.
+      anchor = { col: target.tileCol, row: target.tileRow };
+      visit.retried = true;
+      visit.waited = 0;
+    } else if (sameAnchor) {
+      return;
+    }
     visit.anchor = anchor;
-    ch.path = this.pathNextTo(ch, anchor);
+    ch.path = this.visitPath(ch, target, anchor);
     ch.state = ch.path.length > 0 ? CharacterState.WALK : CharacterState.IDLE;
   }
 
