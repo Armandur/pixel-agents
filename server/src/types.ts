@@ -24,6 +24,8 @@ export interface AgentState {
   directoryName?: string;
   /** The CLI's own name for the session (HookProvider.sessionNames); not persisted */
   sessionName?: string;
+  /** Epoch ms since the agent went idle (waiting or done); undefined while working. Not persisted. */
+  idleSince?: number;
   /** Timestamp of last JSONL data received (ms since epoch) */
   lastDataAt: number;
   /** Total JSONL lines processed for this agent */

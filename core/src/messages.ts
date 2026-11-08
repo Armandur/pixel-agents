@@ -26,6 +26,7 @@ export type ServerMessage =
   | AgentTeamInfo
   | AgentContextUsage
   | AgentSessionName
+  | AgentIdleSince
   | LayoutLoaded
   | FurnitureAssetsLoaded
   | CharacterSpritesLoaded
@@ -209,6 +210,12 @@ export interface AgentSessionName {
   type: 'agentSessionName';
   id: number;
   sessionName: string;
+}
+
+export interface AgentIdleSince {
+  type: 'agentIdleSince';
+  id: number;
+  since?: number;
 }
 
 export interface LayoutLoaded {

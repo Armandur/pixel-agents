@@ -87,6 +87,7 @@ function App() {
     agentAwaitingInput,
     agentSeenActivity,
     agentSessionNames,
+    agentIdleSince,
     subagentTools,
     subagentCharacters,
     layoutReady,
@@ -165,6 +166,7 @@ function App() {
     agentAwaitingInput,
     agentSeenActivity,
     agentSessionNames,
+    agentIdleSince,
   });
 
   const launchIntoDirectory = useCallback((directory: Directory) => {

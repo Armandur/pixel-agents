@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
-import { TERMINAL_SIDEBAR_WIDTH_PX } from '../constants.js';
+import { CARD_IDLE_TICK_MS, TERMINAL_SIDEBAR_WIDTH_PX } from '../constants.js';
 import type { AgentAppearance, AgentCardLabel, TabStatus } from './AgentCard.js';
 import { AgentCard } from './AgentCard.js';
 import { cardVariant, matchesCardFilter } from './cardBar.js';
@@ -54,6 +54,12 @@ export function AgentCardBar({
 }: AgentCardBarProps) {
   const [query, setQuery] = useState('');
   const [hideIdle, setHideIdle] = useState(false);
+  // Re-render on a slow tick so "Idle · 12 min" keeps counting between messages.
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => setTick((n) => n + 1), CARD_IDLE_TICK_MS);
+    return () => clearInterval(timer);
+  }, []);
 
   if (agentIds.length === 0) return null;
 

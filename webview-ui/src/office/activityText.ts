@@ -47,6 +47,27 @@ export function characterActivityText(ch: Character, tools: ToolActivity[] | und
   return getActivityText(tools, ch.isActive, ch.bubbleType, ch.waitingAwaitingInput ?? false);
 }
 
+const MINUTE_MS = 60_000;
+const HOUR_MS = 60 * MINUTE_MS;
+const DAY_MS = 24 * HOUR_MS;
+
+/** "<1 min", "12 min", "3 h", "2 d" — coarse on purpose: the card re-renders
+ *  on a slow tick, and "how long" matters more than the exact minute. */
+export function formatIdleDuration(ms: number): string {
+  if (ms < MINUTE_MS) return '<1 min';
+  if (ms < HOUR_MS) return `${Math.floor(ms / MINUTE_MS)} min`;
+  if (ms < 2 * DAY_MS) return `${Math.floor(ms / HOUR_MS)} h`;
+  return `${Math.floor(ms / DAY_MS)} d`;
+}
+
+/** An idle or waiting agent's activity with how long it has been so
+ *  ("Idle · 12 min"); any other activity, or no known start, is unchanged. */
+export function withIdleDuration(activity: string, since: number | undefined, now: number): string {
+  if (since === undefined) return activity;
+  if (activity !== IDLE_ACTIVITY_TEXT && activity !== WAITING_INPUT_ACTIVITY_TEXT) return activity;
+  return `${activity} · ${formatIdleDuration(Math.max(0, now - since))}`;
+}
+
 /** What to call an agent on its card: team role, then the CLI's session
  *  name, then the Directory, then the id. */
 export function agentDisplayName(

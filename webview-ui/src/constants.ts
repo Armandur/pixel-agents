@@ -368,6 +368,8 @@ export const TERMINAL_DRAWER_MAX_WIDTH_RATIO = 0.8;
  *  edge — fits the filter row and the stacked agent cards (40px mug shot +
  *  name/activity column + 16px close/status column + card chrome). */
 export const TERMINAL_SIDEBAR_WIDTH_PX = 260;
+/** How often the agent cards re-render so their idle durations keep counting. */
+export const CARD_IDLE_TICK_MS = 30_000;
 /** Grab width of the drag handle on the panel's left edge. */
 export const TERMINAL_DRAWER_RESIZE_HANDLE_PX = 6;
 

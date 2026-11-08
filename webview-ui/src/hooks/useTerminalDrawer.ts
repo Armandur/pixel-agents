@@ -18,6 +18,7 @@ import {
   agentDisplayName,
   characterActivityText,
   IDLE_ACTIVITY_TEXT,
+  withIdleDuration,
 } from '../office/activityText.js';
 import type { OfficeState } from '../office/engine/officeState.js';
 import type { ToolActivity } from '../office/types.js';
@@ -35,6 +36,7 @@ interface TerminalDrawerInputs {
   agentAwaitingInput: Record<number, boolean>;
   agentSeenActivity: Record<number, boolean>;
   agentSessionNames: Record<number, string>;
+  agentIdleSince: Record<number, number>;
 }
 
 export interface TerminalDrawerController {
@@ -99,6 +101,7 @@ export function useTerminalDrawer({
   agentAwaitingInput,
   agentSeenActivity,
   agentSessionNames,
+  agentIdleSince,
 }: TerminalDrawerInputs): TerminalDrawerController {
   const [activeAgentId, setActiveAgentId] = useState<number | null>(null);
   const [lastOpened, setLastOpened] = useState<{ agentId: number; seq: number } | null>(null);
@@ -221,10 +224,14 @@ export function useTerminalDrawer({
         // The provider shows as the mug shot's badge, not in the name; the
         // filter still matches it ("codex").
         provider: providerBadge(ch?.providerId)?.label,
-        activity: ch ? characterActivityText(ch, agentTools[id]) : IDLE_ACTIVITY_TEXT,
+        activity: withIdleDuration(
+          ch ? characterActivityText(ch, agentTools[id]) : IDLE_ACTIVITY_TEXT,
+          agentIdleSince[id],
+          Date.now(),
+        ),
       };
     },
-    [getOfficeState, agentTools, agentSessionNames],
+    [getOfficeState, agentTools, agentSessionNames, agentIdleSince],
   );
 
   const hover = useCallback(

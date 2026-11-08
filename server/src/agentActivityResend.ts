@@ -31,6 +31,10 @@ export function resendAgentActivity(
       });
     }
 
+    if (agent.idleSince !== undefined) {
+      send({ type: 'agentIdleSince', id, since: agent.idleSince });
+    }
+
     if (agent.sessionName) {
       send({ type: 'agentSessionName', id, sessionName: agent.sessionName });
     }

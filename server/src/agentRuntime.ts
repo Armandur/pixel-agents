@@ -37,6 +37,7 @@ import {
 } from './fileWatcher.js';
 import type { HookEvent } from './hookEventHandler.js';
 import { HookEventHandler } from './hookEventHandler.js';
+import { IdleSinceTracker } from './idleSince.js';
 import { assignPaletteIfNeeded } from './paletteAssigner.js';
 import { PathSet, pathsMatch } from './pathKey.js';
 import { hookProviders, observedProviders } from './providers/index.js';
@@ -78,6 +79,7 @@ export class AgentRuntime {
   private externalScanTimer: ReturnType<typeof setInterval> | null = null;
   private staleCheckTimer: ReturnType<typeof setInterval> | null = null;
   private sessionNameTimer: ReturnType<typeof setInterval> | null = null;
+  private readonly idleSince: IdleSinceTracker;
 
   // Configuration refs (mutable, shared with scanners)
   readonly watchAllSessions = { current: false };
@@ -99,6 +101,7 @@ export class AgentRuntime {
     setHookProvider(provider);
     setFileWatcherHookProvider(provider);
     this.subagentWatch = new SubagentWatch(store);
+    this.idleSince = new IdleSinceTracker(store);
     setSubagentWatch(this.subagentWatch);
     if (provider.team) {
       setTeamProvider(provider.team);
@@ -580,6 +583,7 @@ export class AgentRuntime {
   dispose(): void {
     this.hookEventHandler.dispose();
     this.subagentWatch.dispose();
+    this.idleSince.dispose();
 
     if (this.projectScanTimer.current) {
       clearInterval(this.projectScanTimer.current);

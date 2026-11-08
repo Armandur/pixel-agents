@@ -5,6 +5,7 @@ import {
   getActivityText,
   IDLE_ACTIVITY_TEXT,
   WAITING_INPUT_ACTIVITY_TEXT,
+  withIdleDuration,
 } from '../src/office/activityText.js';
 import type { Character, ToolActivity } from '../src/office/types.js';
 
@@ -28,6 +29,24 @@ describe('getActivityText', () => {
     expect(
       getActivityText([tool('Reading a.ts', true), tool('Running: npm test')], true, null, false),
     ).toBe('Running: npm test');
+  });
+});
+
+describe('withIdleDuration', () => {
+  const t0 = 1_000_000_000;
+
+  it('appends how long an idle or waiting agent has been so', () => {
+    expect(withIdleDuration(IDLE_ACTIVITY_TEXT, t0, t0 + 30_000)).toBe('Idle · <1 min');
+    expect(withIdleDuration(WAITING_INPUT_ACTIVITY_TEXT, t0, t0 + 12 * 60_000)).toBe(
+      'Waiting for input · 12 min',
+    );
+    expect(withIdleDuration(IDLE_ACTIVITY_TEXT, t0, t0 + 3 * 3_600_000)).toBe('Idle · 3 h');
+    expect(withIdleDuration(IDLE_ACTIVITY_TEXT, t0, t0 + 3 * 86_400_000)).toBe('Idle · 3 d');
+  });
+
+  it('leaves a working agent, or one with no known start, alone', () => {
+    expect(withIdleDuration('Running: npm test', t0, t0 + 60_000)).toBe('Running: npm test');
+    expect(withIdleDuration(IDLE_ACTIVITY_TEXT, undefined, t0)).toBe(IDLE_ACTIVITY_TEXT);
   });
 });
 

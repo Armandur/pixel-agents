@@ -98,6 +98,8 @@ interface ExtensionMessageState {
   agentSeenActivity: Record<number, boolean>;
   /** The CLI's own session name per agent (agentSessionName); absent = none known. */
   agentSessionNames: Record<number, string>;
+  /** Epoch ms since each idle agent went idle (agentIdleSince); absent = working. */
+  agentIdleSince: Record<number, number>;
   subagentTools: Record<number, Record<string, ToolActivity[]>>;
   subagentCharacters: SubagentCharacter[];
   layoutReady: boolean;
@@ -188,6 +190,7 @@ export function useExtensionMessages(
   const [agentAwaitingInput, setAgentAwaitingInput] = useState<Record<number, boolean>>({});
   const [agentSeenActivity, setAgentSeenActivity] = useState<Record<number, boolean>>({});
   const [agentSessionNames, setAgentSessionNames] = useState<Record<number, string>>({});
+  const [agentIdleSince, setAgentIdleSince] = useState<Record<number, number>>({});
   const markSeenActivity = (id: number) =>
     setAgentSeenActivity((prev) => (prev[id] ? prev : { ...prev, [id]: true }));
   const [subagentTools, setSubagentTools] = useState<
@@ -858,6 +861,16 @@ export function useExtensionMessages(
         const id = msg.id as number;
         const name = msg.sessionName as string;
         setAgentSessionNames((prev) => (prev[id] === name ? prev : { ...prev, [id]: name }));
+      } else if (msg.type === 'agentIdleSince') {
+        const id = msg.id as number;
+        const since = typeof msg.since === 'number' ? msg.since : undefined;
+        setAgentIdleSince((prev) => {
+          if (prev[id] === since) return prev;
+          const next = { ...prev };
+          if (since === undefined) delete next[id];
+          else next[id] = since;
+          return next;
+        });
       } else if (msg.type === 'agentContextUsage') {
         const id = msg.id as number;
         os.setAgentContext(id, msg.contextTokens as number, msg.maxContextTokens as number);
@@ -892,6 +905,7 @@ export function useExtensionMessages(
     agentAwaitingInput,
     agentSeenActivity,
     agentSessionNames,
+    agentIdleSince,
     subagentTools,
     subagentCharacters,
     layoutReady,
