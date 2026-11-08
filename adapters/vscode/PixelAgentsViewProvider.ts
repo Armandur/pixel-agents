@@ -833,6 +833,7 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
 
         this.runtime.startStaleCheck();
         this.runtime.startSessionNamePolling();
+        this.runtime.startQuotaPolling();
 
         // Load furniture assets BEFORE sending layout
         (async () => {

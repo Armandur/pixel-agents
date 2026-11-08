@@ -16,7 +16,7 @@ import type { HookProvider } from '../../core/src/provider.js';
 import { createAgentState } from './agentState.js';
 import type { AgentStateStore } from './agentStateStore.js';
 import { readConfig } from './configPersistence.js';
-import { SESSION_NAME_POLL_INTERVAL_MS } from './constants.js';
+import { QUOTA_POLL_INTERVAL_MS, SESSION_NAME_POLL_INTERVAL_MS } from './constants.js';
 import { DismissalTracker } from './dismissalTracker.js';
 import {
   adoptExternalSessionFromHook,
@@ -42,6 +42,7 @@ import { IdleSinceTracker } from './idleSince.js';
 import { assignPaletteIfNeeded } from './paletteAssigner.js';
 import { PathSet, pathsMatch } from './pathKey.js';
 import { hookProviders, observedProviders } from './providers/index.js';
+import { QuotaTracker } from './quota.js';
 import { repairedDirectoryName } from './sessionDirectoryName.js';
 import { refreshSessionNames } from './sessionNames.js';
 import { SessionRouter } from './sessionRouter.js';
@@ -80,6 +81,8 @@ export class AgentRuntime {
   private externalScanTimer: ReturnType<typeof setInterval> | null = null;
   private staleCheckTimer: ReturnType<typeof setInterval> | null = null;
   private sessionNameTimer: ReturnType<typeof setInterval> | null = null;
+  private quotaTimer: ReturnType<typeof setInterval> | null = null;
+  private readonly quota: QuotaTracker;
   private readonly idleSince: IdleSinceTracker;
 
   // Configuration refs (mutable, shared with scanners)
@@ -103,6 +106,7 @@ export class AgentRuntime {
     setFileWatcherHookProvider(provider);
     this.subagentWatch = new SubagentWatch(store);
     this.idleSince = new IdleSinceTracker(store);
+    this.quota = new QuotaTracker(store, [...hookProviders, ...observedProviders]);
     setSubagentWatch(this.subagentWatch);
     if (provider.team) {
       setTeamProvider(provider.team);
@@ -485,6 +489,19 @@ export class AgentRuntime {
     this.sessionNameTimer = setInterval(refresh, SESSION_NAME_POLL_INTERVAL_MS);
   }
 
+  /** Poll every provider's quota source; broadcast `quotaUpdate` on change. */
+  startQuotaPolling(): void {
+    if (this.quotaTimer) return;
+    const refresh = () => this.quota.refresh();
+    refresh();
+    this.quotaTimer = setInterval(refresh, QUOTA_POLL_INTERVAL_MS);
+  }
+
+  /** The latest quota per provider, for a client that just connected. */
+  quotaMessages(): ReturnType<QuotaTracker['messages']> {
+    return this.quota.messages();
+  }
+
   // ── Restore persisted external agents (standalone) ──
 
   /**
@@ -600,6 +617,10 @@ export class AgentRuntime {
     if (this.sessionNameTimer) {
       clearInterval(this.sessionNameTimer);
       this.sessionNameTimer = null;
+    }
+    if (this.quotaTimer) {
+      clearInterval(this.quotaTimer);
+      this.quotaTimer = null;
     }
 
     for (const id of [...this.store.keys()]) {

@@ -9,6 +9,7 @@ import { setGhostHeadlessAgents as setRendererGhostHeadlessAgents } from '../off
 import { setFloorSprites } from '../office/floorTiles.js';
 import { buildDynamicCatalog } from '../office/layout/furnitureCatalog.js';
 import { migrateLayoutColors } from '../office/layout/layoutSerializer.js';
+import type { QuotaInfo } from '../office/quotaFormat.js';
 import { setCarpetSprites } from '../office/sprites/carpetTiles.js';
 import { setPetTemplates } from '../office/sprites/petSpriteData.js';
 import { setCharacterTemplates } from '../office/sprites/spriteData.js';
@@ -102,6 +103,8 @@ interface ExtensionMessageState {
   agentCrowned: Record<number, boolean>;
   /** Epoch ms since each idle agent went idle (agentIdleSince); absent = working. */
   agentIdleSince: Record<number, number>;
+  /** Latest usage quota per provider id (quotaUpdate), for the TV screens. */
+  quotas: Record<string, QuotaInfo>;
   subagentTools: Record<number, Record<string, ToolActivity[]>>;
   subagentCharacters: SubagentCharacter[];
   layoutReady: boolean;
@@ -194,6 +197,7 @@ export function useExtensionMessages(
   const [agentSessionNames, setAgentSessionNames] = useState<Record<number, string>>({});
   const [agentCrowned, setAgentCrowned] = useState<Record<number, boolean>>({});
   const [agentIdleSince, setAgentIdleSince] = useState<Record<number, number>>({});
+  const [quotas, setQuotas] = useState<Record<string, QuotaInfo>>({});
   const markSeenActivity = (id: number) =>
     setAgentSeenActivity((prev) => (prev[id] ? prev : { ...prev, [id]: true }));
   const [subagentTools, setSubagentTools] = useState<
@@ -867,6 +871,14 @@ export function useExtensionMessages(
         const crowned = msg.crowned === true;
         setAgentCrowned((prev) => (!!prev[id] === crowned ? prev : { ...prev, [id]: crowned }));
         os.setAgentCrowned(id, crowned);
+      } else if (msg.type === 'quotaUpdate') {
+        const provider = msg.provider as string;
+        const info: QuotaInfo = {
+          windows: msg.windows as QuotaInfo['windows'],
+          capturedAt: msg.capturedAt as number,
+          stale: msg.stale === true,
+        };
+        setQuotas((prev) => ({ ...prev, [provider]: info }));
       } else if (msg.type === 'agentConversation') {
         os.startConversation(
           msg.fromId as number,
@@ -920,6 +932,7 @@ export function useExtensionMessages(
     agentSessionNames,
     agentCrowned,
     agentIdleSince,
+    quotas,
     subagentTools,
     subagentCharacters,
     layoutReady,

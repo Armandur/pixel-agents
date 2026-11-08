@@ -31,6 +31,7 @@ import { useTerminalDrawer } from './hooks/useTerminalDrawer.js';
 import { MobileShell } from './mobile/MobileShell.js';
 import { useMobileShell } from './mobile/useMobileShell.js';
 import { OfficeCanvas } from './office/components/OfficeCanvas.js';
+import { QuotaScreens } from './office/components/QuotaScreens.js';
 import { ToolOverlay } from './office/components/ToolOverlay.js';
 import { EditorState } from './office/editor/editorState.js';
 import { EditorToolbar } from './office/editor/EditorToolbar.js';
@@ -90,6 +91,7 @@ function App() {
     agentSessionNames,
     agentCrowned,
     agentIdleSince,
+    quotas,
     subagentTools,
     subagentCharacters,
     layoutReady,
@@ -590,6 +592,13 @@ function App() {
               );
             })()}
 
+          <QuotaScreens
+            officeState={officeState}
+            quotas={quotas}
+            containerRef={containerRef}
+            zoom={editor.zoom}
+            panRef={editor.panRef}
+          />
           <ToolOverlay
             officeState={officeState}
             agents={agents}

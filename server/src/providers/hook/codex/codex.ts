@@ -1,5 +1,6 @@
 import type { AgentEvent, HookProvider } from '../../../../../core/src/provider.js';
 import { claudeProvider } from '../claude/claude.js';
+import { readCodexQuota } from './codexQuota.js';
 
 /**
  * Codex CLI (0.164+) as an observe-only hook provider.
@@ -48,4 +49,5 @@ export const codexProvider: HookProvider = {
   permissionExemptTools: new Set(['request_user_input']),
   subagentToolNames: new Set<string>(),
   readingTools: new Set<string>(),
+  readQuota: () => readCodexQuota(),
 };

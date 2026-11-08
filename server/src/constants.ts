@@ -27,6 +27,15 @@ export const EXTERNAL_ACTIVE_THRESHOLD_MS = 120_000; // 2 minutes
 export const EXTERNAL_STALE_CHECK_INTERVAL_MS = 30_000;
 /** How often agents' session names are re-read from each provider's registry. */
 export const SESSION_NAME_POLL_INTERVAL_MS = 3000;
+
+// ── Usage quota (TV screens) ────────────────────────────────
+/** How often each provider's quota source is re-read. */
+export const QUOTA_POLL_INTERVAL_MS = 30_000;
+/** A quota snapshot older than this is reported stale (screens show "unknown"). */
+export const QUOTA_STALE_AFTER_SEC = 15 * 60;
+/** Quota window lengths, in minutes, as providers report them. */
+export const QUOTA_WINDOW_MINUTES = { '5h': 300, '7d': 10_080 } as const;
+
 /** Cooldown after user closes an agent via X. Must be > EXTERNAL_ACTIVE_THRESHOLD_MS
  *  so the file's mtime becomes stale before the dismissal expires. */
 export const DISMISSED_COOLDOWN_MS = 180_000; // 3 minutes

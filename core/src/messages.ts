@@ -28,6 +28,7 @@ export type ServerMessage =
   | AgentSessionName
   | AgentIdleSince
   | AgentConversation
+  | QuotaUpdate
   | LayoutLoaded
   | FurnitureAssetsLoaded
   | CharacterSpritesLoaded
@@ -226,6 +227,22 @@ export interface AgentConversation {
   toId: number;
   summary?: string;
 }
+
+export interface QuotaUpdate {
+  type: 'quotaUpdate';
+  provider: string;
+  windows: QuotaWindow[];
+  capturedAt: number;
+  stale?: boolean;
+}
+
+export interface QuotaWindow {
+  id: QuotaWindowId;
+  usedPercent: number;
+  resetsAt: number;
+}
+
+export type QuotaWindowId = '5h' | '7d';
 
 export interface LayoutLoaded {
   type: 'layoutLoaded';

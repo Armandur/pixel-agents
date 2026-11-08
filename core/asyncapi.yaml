@@ -103,6 +103,7 @@ components:
         - $ref: '#/components/schemas/AgentSessionName'
         - $ref: '#/components/schemas/AgentIdleSince'
         - $ref: '#/components/schemas/AgentConversation'
+        - $ref: '#/components/schemas/QuotaUpdate'
         # Layout
         - $ref: '#/components/schemas/LayoutLoaded'
         # Assets
@@ -503,6 +504,51 @@ components:
           description: >-
             The session name is listed in the config's crownedSessions; the
             office draws the agent with a crown.
+
+    QuotaUpdate:
+      description: |
+        The usage quota of one provider's account (5 hour and 7 day windows),
+        for the TV screens in the office. Not per agent. Sent when the numbers
+        change and again to every client on `webviewReady`. A window the plan
+        does not have is absent from `windows`; a provider with no readable
+        source sends nothing.
+      type: object
+      additionalProperties: false
+      required: [type, provider, windows, capturedAt]
+      properties:
+        type:
+          const: quotaUpdate
+        provider:
+          type: string
+          description: Provider id, e.g. `claude` or `codex`.
+        windows:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuotaWindow'
+        capturedAt:
+          type: number
+          description: When the provider last wrote these numbers, epoch seconds.
+        stale:
+          type: boolean
+          description: The numbers are older than the staleness limit; show them as unknown.
+
+    QuotaWindowId:
+      type: string
+      enum: ['5h', '7d']
+
+    QuotaWindow:
+      type: object
+      additionalProperties: false
+      required: [id, usedPercent, resetsAt]
+      properties:
+        id:
+          $ref: '#/components/schemas/QuotaWindowId'
+        usedPercent:
+          type: number
+          description: Share of the window used, 0-100.
+        resetsAt:
+          type: number
+          description: When the window resets, epoch seconds.
 
     AgentContextUsage:
       description: |

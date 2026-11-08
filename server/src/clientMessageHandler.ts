@@ -643,6 +643,10 @@ function handleWebviewReady(send: WsSend, ctx: ClientMessageContext): void {
   // client shows bare characters until each agent takes another turn.
   resendAgentActivity(send, store);
 
+  // 8b. Quota: account-wide, not per agent, so it is not part of the agent
+  // replay. The TV screens read it, not the characters, so order vs layout is free.
+  for (const quota of runtime?.quotaMessages() ?? []) send(quota);
+
   // 9. Re-announce live terminals AFTER existingAgents, so a browser that
   // reloaded (or a second tab) rebuilds its drawer tabs. The PTY outlives the
   // socket, so these sessions are still attachable and their scrollback replays

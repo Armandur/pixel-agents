@@ -624,3 +624,47 @@ export const VISUAL_VIEWPORT_FULL_EPSILON_PX = 1;
  *  (with an editable focused) = the software keyboard is up. Well above an
  *  address bar collapsing (~56 px), well below any on-screen keyboard. */
 export const KEYBOARD_MIN_HEIGHT_PX = 150;
+
+// ── Quota TV screens ────────────────────────────────────────
+/** Furniture type ids of the wall TVs, and the provider each one shows. */
+export const QUOTA_TV_PROVIDERS: Readonly<Record<string, { provider: string; title: string }>> = {
+  TV_CLAUDE: { provider: 'claude', title: 'Claude' },
+  TV_CODEX: { provider: 'codex', title: 'Codex' },
+};
+/** Used-percent at which a quota window turns yellow, then red. */
+export const QUOTA_WARN_PERCENT = 60;
+export const QUOTA_DANGER_PERCENT = 85;
+/** The lit area of the 48x32 TV sprite, in world px from the sprite's top-left. */
+export const QUOTA_SCREEN_INSET_X = 3;
+export const QUOTA_SCREEN_INSET_Y = 13;
+export const QUOTA_SCREEN_WIDTH = 42;
+export const QUOTA_SCREEN_HEIGHT = 12;
+/** The provider symbol on the screen, a square this many world px wide. */
+export const QUOTA_SYMBOL_WORLD_PX = 10;
+/** Cells per usage bar, like the Claude statusline's bars (which use 20). */
+export const QUOTA_BAR_CELLS = 10;
+/** The statusline's green → yellow → red cell ramp (xterm 46 … 196): cell i
+ *  of a bar takes its colour from where it sits along the bar. */
+export const QUOTA_BAR_RAMP = [
+  '#00ff00',
+  '#5fff00',
+  '#87ff00',
+  '#afff00',
+  '#d7ff00',
+  '#ffff00',
+  '#ffd700',
+  '#ffaf00',
+  '#ff8700',
+  '#ff5f00',
+  '#ff0000',
+] as const;
+/** An unfilled bar cell. */
+export const QUOTA_BAR_EMPTY = '#2e2e3a';
+/** How faded a screen with old numbers is. */
+export const QUOTA_STALE_OPACITY = 0.6;
+export const QUOTA_SCREEN_Z_INDEX = 40;
+/** Swedish weekday abbreviations, Sunday first (Date#getDay order). */
+export const QUOTA_WEEKDAYS = ['sön', 'mån', 'tis', 'ons', 'tors', 'fre', 'lör'] as const;
+/** Screen texts. */
+export const QUOTA_TEXT_UNKNOWN = 'okänt';
+export const QUOTA_TEXT_NO_5H = 'saknas';

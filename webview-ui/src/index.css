@@ -42,6 +42,14 @@
   --color-status-success: #89d185;
   --color-status-error: var(--color-danger);
 
+  /* Quota TV screens: level colours reuse the status palette */
+  --quota-ok: var(--color-status-success);
+  --quota-warn: var(--color-status-permission);
+  --quota-danger: var(--color-danger);
+  --quota-unknown: var(--color-text-muted);
+  --quota-title: var(--color-text);
+  --quota-reset: var(--color-text-muted);
+
   /* Shadow */
   --shadow-pixel: 2px 2px 0px #0a0a14;
 

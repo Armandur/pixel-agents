@@ -126,6 +126,12 @@ export interface HookProvider {
    *  their Directory name. */
   sessionNames?(): Map<string, string>;
 
+  /** The account's current usage quota (not per session), read from whatever
+   *  the CLI leaves on disk. Read on a 30 s poll, so it must be cheap and must
+   *  never throw: a missing or unreadable source is `undefined`. Staleness is
+   *  decided by the runtime from `capturedAt`, not by the provider. */
+  readQuota?(): QuotaSnapshot | undefined;
+
   // ── Optional file fallback (heuristic mode) ──
 
   /** Session directories to scan. Undefined = no file fallback. */
@@ -159,3 +165,20 @@ export interface HookProvider {
 
 // TODO(provider type taxonomy): FileProvider (polling-only CLIs) and StreamProvider
 // (push-based external services) will be added alongside the first real second provider
+
+/** One rate-limit window of a provider account. */
+export interface QuotaWindow {
+  /** 5 hour or 7 day window. */
+  id: '5h' | '7d';
+  /** Share of the window already used, 0-100. */
+  usedPercent: number;
+  /** When the window resets, epoch seconds. */
+  resetsAt: number;
+}
+
+/** What a provider reports about its quota. A window the plan lacks is absent. */
+export interface QuotaSnapshot {
+  windows: QuotaWindow[];
+  /** When the provider last wrote the numbers, epoch seconds. */
+  capturedAt: number;
+}

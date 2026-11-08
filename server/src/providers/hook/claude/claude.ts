@@ -13,6 +13,7 @@ import {
   installHooks as installerInstallHooks,
   uninstallHooks as installerUninstallHooks,
 } from './claudeHookInstaller.js';
+import { readClaudeQuota } from './claudeQuota.js';
 import { readClaudeSessionNames, resolveClaudeSessionTarget } from './claudeSessionRegistry.js';
 import { claudeTeamProvider } from './claudeTeamProvider.js';
 import { CONSENT_DISCLOSURE, CONSENT_INSTALL_HEADLINE } from './consentCopy.js';
@@ -325,6 +326,7 @@ export const claudeProvider: HookProvider = {
   terminalNamePrefix: CLAUDE_TERMINAL_NAME_PREFIX,
   contextWindowForModel,
   sessionNames: () => readClaudeSessionNames(),
+  readQuota: () => readClaudeQuota(),
 
   getSessionDirs,
   getAllSessionRoots,

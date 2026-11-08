@@ -89,3 +89,8 @@ export const CLAUDE_SMALL_CONTEXT_MODEL_PATTERN = /haiku|claude-[123]|-4-[01]\b/
 /** Claude Code's live-session registry under the home directory: one
  *  `<pid>.json` per running CLI, carrying the session's name. */
 export const CLAUDE_SESSION_REGISTRY_DIR = '.claude/sessions';
+
+/** Where the user's statusline script drops the account's rate limits
+ *  (relative to the home directory): the only local source of Claude's quota,
+ *  since hook payloads and transcripts do not carry it. */
+export const CLAUDE_QUOTA_CACHE_PATH = '.cache/agentkontoret/claude-quota.json';
