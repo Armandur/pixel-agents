@@ -45,8 +45,9 @@ export const HOVERED_OUTLINE_ALPHA = 0.5;
 export const HEADLESS_CHARACTER_ALPHA = 0.5;
 
 // ── Provider badge ──────────────────────────────────────────
-/** Badge colours per hook provider, drawn at the character's hip and on its
- *  agent card so Claude and Codex agents read apart at a glance. */
+/** Badge colours per hook provider, on the agent cards (a lettered badge on
+ *  desktop, a colour square on mobile) so Claude and Codex agents read apart
+ *  at a glance. The office characters themselves carry no badge. */
 export interface ProviderBadge {
   label: string;
   /** One letter on the desktop agent card's badge (Claude and Codex share an
@@ -87,10 +88,6 @@ export const LOUNGE_STAND_MIN_SEC = 8;
 export const LOUNGE_STAND_MAX_SEC = 20;
 /** A crowned agent's name on its card. */
 export const CROWNED_NAME_COLOR = '#ffd700';
-/** Badge size and offset from the sprite's bottom-right corner, in sprite pixels. */
-export const PROVIDER_BADGE_SIZE_PX = 4;
-export const PROVIDER_BADGE_INSET_X_PX = 3;
-export const PROVIDER_BADGE_INSET_Y_PX = 9;
 export const GHOST_PREVIEW_SPRITE_ALPHA = 0.5;
 export const GHOST_PREVIEW_TINT_ALPHA = 0.25;
 export const SELECTION_DASH_PATTERN: [number, number] = [4, 3];
