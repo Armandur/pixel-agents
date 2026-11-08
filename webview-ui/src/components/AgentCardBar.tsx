@@ -58,7 +58,7 @@ export function AgentCardBar({
   if (agentIds.length === 0) return null;
 
   const shown = agentIds.filter((id) =>
-    matchesCardFilter({ name: labelFor(id).name, status: statusFor(id) }, { query, hideIdle }),
+    matchesCardFilter({ ...labelFor(id), status: statusFor(id) }, { query, hideIdle }),
   );
 
   return (

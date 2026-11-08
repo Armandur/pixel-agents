@@ -49,12 +49,15 @@ export const HEADLESS_CHARACTER_ALPHA = 0.5;
  *  agent card so Claude and Codex agents read apart at a glance. */
 export interface ProviderBadge {
   label: string;
+  /** One letter on the desktop agent card's badge (Claude and Codex share an
+   *  initial, so this is not label[0]). */
+  glyph: string;
   fill: string;
   border: string;
 }
 export const PROVIDER_BADGES: Record<string, ProviderBadge> = {
-  claude: { label: 'Claude', fill: '#d97757', border: '#5a2617' },
-  codex: { label: 'Codex', fill: '#9b6bff', border: '#34205e' },
+  claude: { label: 'Claude', glyph: 'C', fill: '#d97757', border: '#5a2617' },
+  codex: { label: 'Codex', glyph: 'X', fill: '#9b6bff', border: '#34205e' },
 };
 /** Agents without a provider id come from Claude (the default provider). */
 export function providerBadge(providerId: string | undefined): ProviderBadge | undefined {

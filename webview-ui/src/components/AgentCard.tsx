@@ -15,6 +15,8 @@ export interface AgentAppearance {
 export interface AgentCardLabel {
   name: string;
   activity: string;
+  /** Provider label ("Claude", "Codex") for the filter; shown as the badge. */
+  provider?: string;
 }
 
 /** Agent activity reflected by the tab's status dot. */
@@ -80,7 +82,10 @@ export function AgentCard({
     >
       <div className="relative shrink-0">
         <CharacterMugShot palette={appearance.palette} hueShift={appearance.hueShift} />
-        {badge && (
+        {/* Mobile's mug-shot-only cards mark the provider with a small
+            colour square; desktop cards carry it beside the name instead,
+            where it covers nothing. */}
+        {badge && !label && (
           <span
             className="absolute bottom-0 left-0 size-6 border-2"
             style={{ background: badge.fill, borderColor: badge.border }}
@@ -94,8 +99,20 @@ export function AgentCard({
           data-testid="agent-card-label"
           title={`${label.name}: ${label.activity}`}
         >
-          <span className="text-2xs text-text overflow-hidden text-ellipsis whitespace-nowrap">
-            {label.name}
+          <span className="flex items-center gap-4 min-w-0">
+            <span className="text-2xs text-text overflow-hidden text-ellipsis whitespace-nowrap">
+              {label.name}
+            </span>
+            {badge && (
+              <span
+                className="shrink-0 size-14 border-2 flex items-center justify-center text-2xs leading-none"
+                style={{ background: badge.fill, borderColor: badge.border, color: badge.border }}
+                aria-label={badge.label}
+                title={badge.label}
+              >
+                {badge.glyph}
+              </span>
+            )}
           </span>
           <span className="text-2xs text-text-muted overflow-hidden text-ellipsis whitespace-nowrap">
             {label.activity}

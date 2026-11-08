@@ -215,11 +215,10 @@ export function useTerminalDrawer({
     (id: number): AgentCardLabel => {
       const ch = getOfficeState().characters.get(id);
       return {
-        // Same "Claude · infra" origin line as the overlay, so the filter
-        // also matches on the provider.
-        name: [providerBadge(ch?.providerId)?.label, agentDisplayName(id, ch)]
-          .filter(Boolean)
-          .join(' · '),
+        name: agentDisplayName(id, ch),
+        // The provider shows as the mug shot's badge, not in the name; the
+        // filter still matches it ("codex").
+        provider: providerBadge(ch?.providerId)?.label,
         activity: ch ? characterActivityText(ch, agentTools[id]) : IDLE_ACTIVITY_TEXT,
       };
     },

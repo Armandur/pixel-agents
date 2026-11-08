@@ -59,6 +59,21 @@ describe('matchesCardFilter', () => {
     );
   });
 
+  it('matches the provider too, so "codex" finds Codex agents', () => {
+    expect(
+      matchesCardFilter(
+        { name: 'oldKbok', provider: 'Codex', status: 'working' },
+        { ...all, query: 'codex' },
+      ),
+    ).toBe(true);
+    expect(
+      matchesCardFilter(
+        { name: 'oldKbok', provider: 'Claude', status: 'working' },
+        { ...all, query: 'codex' },
+      ),
+    ).toBe(false);
+  });
+
   it('hide-idle drops idle agents and agents with no activity yet, keeps attention', () => {
     const hide = { query: '', hideIdle: true };
     expect(matchesCardFilter({ name: 'a', status: 'idle' }, hide)).toBe(false);
