@@ -754,6 +754,7 @@ function App() {
               getAppearance={terminalDrawer.getAppearance}
               statusFor={terminalDrawer.statusFor}
               labelFor={terminalDrawer.labelFor}
+              onHoverAgent={terminalDrawer.hover}
               onStatusChange={terminalDrawer.onStatusChange}
             />
           ) : (
@@ -766,6 +767,7 @@ function App() {
                 labelFor={terminalDrawer.labelFor}
                 onSelect={handleCardSelect}
                 onClose={handleCloseAgent}
+                onHover={terminalDrawer.hover}
               />
             )
           )}

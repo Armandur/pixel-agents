@@ -20,6 +20,8 @@ interface AgentCardBarProps {
   labelFor: (agentId: number) => AgentCardLabel;
   onSelect: (agentId: number) => void;
   onClose: (agentId: number) => void;
+  /** Card hover highlights the character in the office (null = none). */
+  onHover: (agentId: number | null) => void;
 }
 
 /**
@@ -48,6 +50,7 @@ export function AgentCardBar({
   labelFor,
   onSelect,
   onClose,
+  onHover,
 }: AgentCardBarProps) {
   const [query, setQuery] = useState('');
   const [hideIdle, setHideIdle] = useState(false);
@@ -93,6 +96,7 @@ export function AgentCardBar({
           label={labelFor(agentId)}
           onSelect={onSelect}
           onClose={onClose}
+          onHover={onHover}
         />
       ))}
       {shown.length === 0 && (

@@ -28,6 +28,7 @@ interface TerminalDrawerProps {
   statusFor: (agentId: number) => TabStatus | null;
   /** An agent's card name + activity. */
   labelFor: (agentId: number) => AgentCardLabel;
+  onHoverAgent: (agentId: number | null) => void;
   onStatusChange: (agentId: number, status: TerminalConnectionStatus) => void;
 }
 
@@ -56,6 +57,7 @@ export function TerminalDrawer({
   getAppearance,
   statusFor,
   labelFor,
+  onHoverAgent,
   onStatusChange,
 }: TerminalDrawerProps) {
   if (agentIds.length === 0) return null;
@@ -72,6 +74,7 @@ export function TerminalDrawer({
         labelFor={labelFor}
         onSelect={onSelectAgent}
         onClose={onCloseAgent}
+        onHover={onHoverAgent}
       />
 
       {/* Terminal panel — opens to the right of the card bar. display:none

@@ -50,6 +50,9 @@ interface AgentCardProps {
   showClose?: boolean;
   onSelect: (agentId: number) => void;
   onClose: (agentId: number) => void;
+  /** Pointer entered (agentId) or left (null) the card: highlights the
+   *  character in the office. */
+  onHover?: (agentId: number | null) => void;
 }
 
 /** One agent's card in the terminal sidebar — mug shot beside a
@@ -64,12 +67,15 @@ export function AgentCard({
   showClose = true,
   onSelect,
   onClose,
+  onHover,
 }: AgentCardProps) {
   const badge = providerBadge(appearance.providerId);
   return (
     <div
       className={`pointer-events-auto flex items-stretch gap-1 p-1 cursor-pointer border-2 shrink-0 ${label ? 'w-full' : ''} ${CARD_VARIANT[variant]}`}
       onClick={() => onSelect(agentId)}
+      onMouseEnter={onHover && (() => onHover(agentId))}
+      onMouseLeave={onHover && (() => onHover(null))}
       title={badge ? `Agent ${agentId} (${badge.label})` : `Agent ${agentId}`}
     >
       <div className="relative shrink-0">

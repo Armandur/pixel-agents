@@ -64,6 +64,9 @@ export interface TerminalDrawerController {
   statusFor: (agentId: number) => TabStatus | null;
   /** Card name + activity, the same activity text the office overlay shows. */
   labelFor: (agentId: number) => AgentCardLabel;
+  /** Card hover: highlight the character (the same outline + label a canvas
+   *  hover gives), so a card can be matched to a walking agent. */
+  hover: (agentId: number | null) => void;
   /** Each TerminalPane reports its socket state here. */
   onStatusChange: (agentId: number, status: TerminalConnectionStatus) => void;
 }
@@ -223,6 +226,15 @@ export function useTerminalDrawer({
     [getOfficeState, agentTools],
   );
 
+  const hover = useCallback(
+    (agentId: number | null) => {
+      // The renderer and ToolOverlay read this every frame; the canvas's own
+      // mousemove overwrites it as soon as the pointer is back on the office.
+      getOfficeState().hoveredAgentId = agentId;
+    },
+    [getOfficeState],
+  );
+
   const onStatusChange = useCallback((agentId: number, status: TerminalConnectionStatus) => {
     setConnStatuses((prev) => (prev[agentId] === status ? prev : { ...prev, [agentId]: status }));
   }, []);
@@ -252,6 +264,7 @@ export function useTerminalDrawer({
     getAppearance,
     statusFor,
     labelFor,
+    hover,
     onStatusChange,
   };
 }
