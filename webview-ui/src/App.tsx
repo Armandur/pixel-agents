@@ -102,6 +102,8 @@ function App() {
     watchAllSessions,
     setWatchAllSessions,
     alwaysShowLabels,
+    hideIdleLabels,
+    setHideIdleLabels,
     ghostHeadlessAgents,
     setGhostHeadlessAgents,
     hooksEnabled,
@@ -207,6 +209,12 @@ function App() {
       return newVal;
     });
   }, []);
+
+  const handleToggleHideIdleLabels = useCallback(() => {
+    const next = !hideIdleLabels;
+    setHideIdleLabels(next);
+    transport.send({ type: 'setHideIdleLabels', enabled: next });
+  }, [hideIdleLabels, setHideIdleLabels]);
 
   // Toggle "Display headless as ghosts". setGhostHeadlessAgents also updates the
   // renderer's module copy, so the office redraws on the next frame.
@@ -579,6 +587,7 @@ function App() {
             panRef={editor.panRef}
             onCloseAgent={handleCloseAgent}
             alwaysShowOverlay={alwaysShowOverlay}
+            hideIdleLabels={hideIdleLabels}
           />
         </>
       ) : (
@@ -825,6 +834,8 @@ function App() {
         onToggleDebugMode={handleToggleDebugMode}
         alwaysShowOverlay={alwaysShowOverlay}
         onToggleAlwaysShowOverlay={handleToggleAlwaysShowOverlay}
+        hideIdleLabels={hideIdleLabels}
+        onToggleHideIdleLabels={handleToggleHideIdleLabels}
         ghostHeadlessAgents={ghostHeadlessAgents}
         onToggleGhostHeadlessAgents={handleToggleGhostHeadlessAgents}
         externalAssetDirectories={externalAssetDirectories}

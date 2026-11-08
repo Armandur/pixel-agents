@@ -119,6 +119,8 @@ interface ExtensionMessageState {
   watchAllSessions: boolean;
   setWatchAllSessions: (v: boolean) => void;
   alwaysShowLabels: boolean;
+  hideIdleLabels: boolean;
+  setHideIdleLabels: (v: boolean) => void;
   ghostHeadlessAgents: boolean;
   setGhostHeadlessAgents: (v: boolean) => void;
   hooksEnabled: boolean;
@@ -204,6 +206,7 @@ export function useExtensionMessages(
   const [extensionVersion, setExtensionVersion] = useState('');
   const [watchAllSessions, setWatchAllSessions] = useState(false);
   const [alwaysShowLabels, setAlwaysShowLabels] = useState(false);
+  const [hideIdleLabels, setHideIdleLabels] = useState(false);
   const [ghostHeadlessAgents, setGhostHeadlessAgentsState] = useState(false);
   const [hooksEnabled, setHooksEnabled] = useState(true);
   const [hooksInstalled, setHooksInstalled] = useState<Record<string, boolean>>({});
@@ -754,6 +757,9 @@ export function useExtensionMessages(
         if (typeof msg.alwaysShowLabels === 'boolean') {
           setAlwaysShowLabels(msg.alwaysShowLabels as boolean);
         }
+        if (typeof msg.hideIdleLabels === 'boolean') {
+          setHideIdleLabels(msg.hideIdleLabels as boolean);
+        }
         if (typeof msg.ghostHeadlessAgents === 'boolean') {
           applyGhostHeadlessAgents(msg.ghostHeadlessAgents as boolean);
         }
@@ -894,6 +900,8 @@ export function useExtensionMessages(
     watchAllSessions,
     setWatchAllSessions,
     alwaysShowLabels,
+    hideIdleLabels,
+    setHideIdleLabels,
     ghostHeadlessAgents,
     setGhostHeadlessAgents: applyGhostHeadlessAgents,
     hooksEnabled,

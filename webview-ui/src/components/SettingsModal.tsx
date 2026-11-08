@@ -15,6 +15,8 @@ interface SettingsModalProps {
   onToggleDebugMode: () => void;
   alwaysShowOverlay: boolean;
   onToggleAlwaysShowOverlay: () => void;
+  hideIdleLabels: boolean;
+  onToggleHideIdleLabels: () => void;
   /** Whether headless agents (adopted, no terminal to focus) render translucent. */
   ghostHeadlessAgents: boolean;
   onToggleGhostHeadlessAgents: () => void;
@@ -51,6 +53,8 @@ export function SettingsModal({
   onToggleDebugMode,
   alwaysShowOverlay,
   onToggleAlwaysShowOverlay,
+  hideIdleLabels,
+  onToggleHideIdleLabels,
   ghostHeadlessAgents,
   onToggleGhostHeadlessAgents,
   externalAssetDirectories,
@@ -204,6 +208,15 @@ export function SettingsModal({
         checked={alwaysShowOverlay}
         onChange={onToggleAlwaysShowOverlay}
       />
+      {/* Only meaningful while labels are always shown: otherwise a label
+          appears on hover/selection alone, which this never hides. */}
+      {alwaysShowOverlay && (
+        <Checkbox
+          label="Hide Labels of Idle Agents"
+          checked={hideIdleLabels}
+          onChange={onToggleHideIdleLabels}
+        />
+      )}
       {/* Headless agents are the office's only terminal-less citizens in VS Code.
           Standalone has no terminals at all, so nothing there would ever ghost. */}
       {!isBrowserRuntime && (

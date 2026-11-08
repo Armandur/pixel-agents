@@ -140,6 +140,7 @@ components:
         - $ref: '#/components/schemas/SetSoundEnabled'
         - $ref: '#/components/schemas/SetLastSeenVersion'
         - $ref: '#/components/schemas/SetAlwaysShowLabels'
+        - $ref: '#/components/schemas/SetHideIdleLabels'
         - $ref: '#/components/schemas/SetGhostHeadlessAgents'
         - $ref: '#/components/schemas/SetHooksEnabled'
         - $ref: '#/components/schemas/HooksConsentResponse'
@@ -661,6 +662,7 @@ components:
         - extensionVersion
         - watchAllSessions
         - alwaysShowLabels
+        - hideIdleLabels
         - ghostHeadlessAgents
         - hooksEnabled
         - hooksInfoShown
@@ -681,6 +683,11 @@ components:
           type: boolean
         alwaysShowLabels:
           type: boolean
+        hideIdleLabels:
+          type: boolean
+          description: >-
+            With alwaysShowLabels on, still hide the label panel of an idle
+            agent (its activity reads Idle) unless it is hovered or selected.
         ghostHeadlessAgents:
           type: boolean
         hooksEnabled:
@@ -1073,6 +1080,16 @@ components:
       properties:
         type:
           const: setAlwaysShowLabels
+        enabled:
+          type: boolean
+
+    SetHideIdleLabels:
+      type: object
+      additionalProperties: false
+      required: [type, enabled]
+      properties:
+        type:
+          const: setHideIdleLabels
         enabled:
           type: boolean
 

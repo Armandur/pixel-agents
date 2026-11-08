@@ -886,6 +886,21 @@ describe('clientMessageHandler: standalone terminal control plane', () => {
     expect(settings?.bypassPermissions).toBe(true);
   });
 
+  it('setHideIdleLabels persists and webviewReady reports it; a read-only client cannot set it', () => {
+    dispatch({ type: 'setHideIdleLabels', enabled: true }, ctx({ privileged: false }));
+    expect(store.getAdapter()!.getSetting('pixel-agents.hideIdleLabels', false)).toBe(false);
+    expect(sent).toContainEqual(
+      expect.objectContaining({ type: 'settingsLoaded', hideIdleLabels: false }),
+    );
+
+    dispatch({ type: 'setHideIdleLabels', enabled: true }, ctx());
+    sent = [];
+    dispatch({ type: 'webviewReady' }, ctx());
+
+    const settings = sent.find((m) => m.type === 'settingsLoaded');
+    expect(settings?.hideIdleLabels).toBe(true);
+  });
+
   // ── webviewReady: the host's own Directory ───────────────────
 
   it('webviewReady lists no host Directory while Show Start Directory is off (the default)', () => {
@@ -1241,6 +1256,7 @@ describe('clientMessageHandler: read-only (untokened) clients', () => {
       { type: 'setSoundEnabled', enabled: false },
       { type: 'setLastSeenVersion', version: '9.9' },
       { type: 'setAlwaysShowLabels', enabled: true },
+      { type: 'setHideIdleLabels', enabled: true },
       { type: 'setGhostHeadlessAgents', enabled: true },
       { type: 'setWatchAllSessions', enabled: true },
       { type: 'setHooksEnabled', providerId: 'claude', enabled: false },

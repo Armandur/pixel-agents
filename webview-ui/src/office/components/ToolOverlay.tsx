@@ -25,7 +25,11 @@ import {
   TOOL_OVERLAY_VERTICAL_OFFSET,
 } from '../../constants.js';
 import type { SubagentCharacter } from '../../hooks/useExtensionMessages.js';
-import { characterActivityText, WAITING_INPUT_ACTIVITY_TEXT } from '../activityText.js';
+import {
+  characterActivityText,
+  IDLE_ACTIVITY_TEXT,
+  WAITING_INPUT_ACTIVITY_TEXT,
+} from '../activityText.js';
 import type { OfficeState } from '../engine/officeState.js';
 import { overlayProjection } from '../projection.js';
 import { getCachedSprite } from '../sprites/spriteCache.js';
@@ -44,6 +48,9 @@ interface ToolOverlayProps {
   panRef: React.RefObject<{ x: number; y: number }>;
   onCloseAgent: (id: number) => void;
   alwaysShowOverlay: boolean;
+  /** With alwaysShowOverlay on, an idle (non-sub) agent's panel is still
+   *  hidden unless hovered or selected. */
+  hideIdleLabels: boolean;
 }
 
 function getFuelColor(ratio: number): string {
@@ -85,6 +92,7 @@ export function ToolOverlay({
   panRef,
   onCloseAgent,
   alwaysShowOverlay,
+  hideIdleLabels,
 }: ToolOverlayProps) {
   const [, setTick] = useState(0);
   useEffect(() => {
@@ -179,7 +187,13 @@ export function ToolOverlay({
         // panel back. When always-show is off, the early return above already
         // keeps the panel hidden for idle agents.
         const isDone = ch.bubbleType === 'waiting' && !ch.waitingAwaitingInput;
-        if (isDone && !isSelected && !isHovered) {
+        // Idle with "hide idle labels": same empty marker as Done, so the
+        // overlay count and per-agent locators stay stable.
+        const isHiddenIdle =
+          hideIdleLabels &&
+          !isSub &&
+          characterActivityText(ch, agentTools[id]) === IDLE_ACTIVITY_TEXT;
+        if ((isDone || isHiddenIdle) && !isSelected && !isHovered) {
           return (
             <Fragment key={id}>
               {bubbleNode}

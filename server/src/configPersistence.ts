@@ -8,6 +8,8 @@ export interface AdapterSettings {
   soundEnabled: boolean;
   lastSeenVersion: string;
   alwaysShowLabels: boolean;
+  /** With alwaysShowLabels on, still hide an idle agent's label panel. */
+  hideIdleLabels: boolean;
   ghostHeadlessAgents: boolean;
   watchAllSessions: boolean;
   hooksInfoShown: boolean;
@@ -28,6 +30,7 @@ export const ADAPTER_SETTING_KEYS = [
   'soundEnabled',
   'lastSeenVersion',
   'alwaysShowLabels',
+  'hideIdleLabels',
   'ghostHeadlessAgents',
   'watchAllSessions',
   'hooksInfoShown',
@@ -77,6 +80,7 @@ const DEFAULT_ADAPTER_SETTINGS: AdapterSettings = {
   soundEnabled: true,
   lastSeenVersion: '',
   alwaysShowLabels: false,
+  hideIdleLabels: false,
   ghostHeadlessAgents: false,
   watchAllSessions: false,
   hooksInfoShown: false,
@@ -174,6 +178,10 @@ function parseAdapterSettings(raw: unknown): AdapterSettings {
       typeof obj.alwaysShowLabels === 'boolean'
         ? obj.alwaysShowLabels
         : DEFAULT_ADAPTER_SETTINGS.alwaysShowLabels,
+    hideIdleLabels:
+      typeof obj.hideIdleLabels === 'boolean'
+        ? obj.hideIdleLabels
+        : DEFAULT_ADAPTER_SETTINGS.hideIdleLabels,
     ghostHeadlessAgents:
       typeof obj.ghostHeadlessAgents === 'boolean'
         ? obj.ghostHeadlessAgents
