@@ -98,3 +98,58 @@ describe('AgentRuntime -- restore reads the legacy folderName', () => {
     expect(written).not.toHaveProperty('folderName');
   });
 });
+
+/**
+ * Claude's project-dir hash folds `/`, `.` and `-` into `-`, so its last
+ * segment named `svky.se` "se". A restored record carrying exactly that lossy
+ * name is repaired from the transcript's own `cwd`; any other name is kept.
+ */
+describe('AgentRuntime -- restore repairs a lossy hash-derived name', () => {
+  let rootDir: string;
+  let projectDir: string;
+  let jsonlPath: string;
+  let runtime: AgentRuntime | undefined;
+
+  beforeEach(() => {
+    rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pxl-restore-lossy-'));
+    projectDir = path.join(rootDir, '-home-rasmus-workspace-svky-se');
+    fs.mkdirSync(projectDir);
+    jsonlPath = path.join(projectDir, 'session.jsonl');
+    fs.writeFileSync(
+      jsonlPath,
+      JSON.stringify({ type: 'user', cwd: '/home/rasmus/workspace/svky.se' }) + '\n',
+    );
+  });
+
+  afterEach(() => {
+    runtime?.dispose();
+    fs.rmSync(rootDir, { recursive: true, force: true });
+  });
+
+  function restoreNamed(directoryName: string): AgentStateStore {
+    const adapter = createMockAdapter([
+      {
+        id: 3,
+        sessionId: 'sess-lossy',
+        terminalName: '',
+        isExternal: true,
+        jsonlFile: jsonlPath,
+        projectDir,
+        directoryName,
+      },
+    ]);
+    const store = new AgentStateStore();
+    store.setAdapter(adapter);
+    runtime = new AgentRuntime(store, claudeProvider);
+    runtime.restoreExternalAgents();
+    return store;
+  }
+
+  it('the hash segment "se" becomes the cwd basename "svky.se"', () => {
+    expect(restoreNamed('se').get(3)?.directoryName).toBe('svky.se');
+  });
+
+  it('a name that is not the hash derivation is left alone', () => {
+    expect(restoreNamed('Webbplatsen').get(3)?.directoryName).toBe('Webbplatsen');
+  });
+});

@@ -46,6 +46,7 @@ import { seedContextUsage } from './contextUsage.js';
 import type { DismissalTracker } from './dismissalTracker.js';
 import { assignPaletteIfNeeded } from './paletteAssigner.js';
 import { pathsMatch } from './pathKey.js';
+import { sessionDirectoryName } from './sessionDirectoryName.js';
 import type { SubagentWatch } from './subagentWatch.js';
 import { cancelPermissionTimer, cancelWaitingTimer, clearAgentActivity } from './timerManager.js';
 import { getHookProvider, processTranscriptLine } from './transcriptParser.js';
@@ -1041,7 +1042,7 @@ export function adoptExternalSessionFromHook(
     const projectDir = path.dirname(transcriptPath);
     const directoryName =
       directoryNameResolver?.({ cwd, projectDir }) ??
-      directoryNameFromProjectDir(path.basename(projectDir));
+      sessionDirectoryName(transcriptPath, projectDir, cwd);
 
     adoptExternalSession(
       transcriptPath,
@@ -1392,11 +1393,6 @@ export function scanExternalDir(
 }
 
 /** Derive a readable Directory name from the Claude project dir hash. */
-function directoryNameFromProjectDir(dirName: string): string {
-  const parts = dirName.replace(/^-+/, '').split('-');
-  return parts[parts.length - 1] || dirName;
-}
-
 /** Scan every session root the active provider exposes for active sessions
  *  (global discovery — powers the "Watch All Sessions" toggle). */
 function scanGlobalProjectDirs(
@@ -1460,8 +1456,7 @@ function scanGlobalProjectDirs(
       }
 
       const directoryName =
-        directoryNameResolver?.({ projectDir: dirPath }) ??
-        directoryNameFromProjectDir(path.basename(dirPath));
+        directoryNameResolver?.({ projectDir: dirPath }) ?? sessionDirectoryName(file, dirPath);
       knownJsonlFiles.add(file);
       console.log(
         `[Pixel Agents] Watcher: detected global session ${path.basename(file)} (${directoryName})`,

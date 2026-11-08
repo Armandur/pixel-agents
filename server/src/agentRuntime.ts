@@ -39,6 +39,7 @@ import { HookEventHandler } from './hookEventHandler.js';
 import { assignPaletteIfNeeded } from './paletteAssigner.js';
 import { PathSet, pathsMatch } from './pathKey.js';
 import { observedProviders } from './providers/index.js';
+import { repairedDirectoryName } from './sessionDirectoryName.js';
 import { SessionRouter } from './sessionRouter.js';
 import { SubagentWatch } from './subagentWatch.js';
 import { cancelPermissionTimer, cancelWaitingTimer } from './timerManager.js';
@@ -510,7 +511,11 @@ export class AgentRuntime {
         // Live spawn ids survive the restart so the 1s scan can re-adopt the
         // spawns' transcripts and the completion queue-op still matches.
         backgroundAgentToolIds: new Set(p.backgroundAgentToolIds ?? []),
-        directoryName: p.directoryName ?? p.folderName,
+        directoryName: repairedDirectoryName(
+          p.directoryName ?? p.folderName,
+          p.jsonlFile,
+          p.projectDir,
+        ),
         teamName: p.teamName,
         agentName: p.agentName,
         isTeamLead: p.isTeamLead,
