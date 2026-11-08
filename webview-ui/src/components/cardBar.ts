@@ -70,3 +70,42 @@ export function matchesCardFilter(
 export function crownedFirst(ids: number[], isCrowned: (id: number) => boolean): number[] {
   return [...ids.filter(isCrowned), ...ids.filter((id) => !isCrowned(id))];
 }
+
+/** A sub-agent as the card bar needs it (structurally a SubagentCharacter). */
+export interface SubagentRef {
+  id: number;
+  parentAgentId: number;
+  label: string;
+}
+
+/** Shown when a sub-agent has no label yet (its Subtask status carried none). */
+const SUBAGENT_FALLBACK_LABEL = 'Sub-agent';
+
+/** Sub-agents grouped by their main agent, in creation order. Agents with no
+ *  sub-agents have no entry. */
+export function groupSubagentsByParent(
+  subagents: readonly SubagentRef[],
+): Map<number, SubagentRef[]> {
+  const byParent = new Map<number, SubagentRef[]>();
+  for (const sub of subagents) {
+    const list = byParent.get(sub.parentAgentId);
+    if (list) list.push(sub);
+    else byParent.set(sub.parentAgentId, [sub]);
+  }
+  return byParent;
+}
+
+/** The card's extra row for one agent's sub-agents: `text` is the visible line
+ *  (CSS ellipsis cuts it to the card width), `title` lists every label, and
+ *  `firstId` is the character a click selects. null when there are none. */
+export function subagentRow(
+  subagents: readonly SubagentRef[] | undefined,
+): { text: string; title: string; firstId: number } | null {
+  if (!subagents || subagents.length === 0) return null;
+  const labels = subagents.map((s) => s.label.trim() || SUBAGENT_FALLBACK_LABEL);
+  return {
+    text: `\u21b3 ${subagents.length}: ${labels.join(', ')}`,
+    title: labels.join('\n'),
+    firstId: subagents[0].id,
+  };
+}

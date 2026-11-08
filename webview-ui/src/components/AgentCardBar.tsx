@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { CARD_IDLE_TICK_MS, TERMINAL_SIDEBAR_WIDTH_PX } from '../constants.js';
 import type { AgentAppearance, AgentCardLabel, TabStatus } from './AgentCard.js';
 import { AgentCard } from './AgentCard.js';
+import type { SubagentRef } from './cardBar.js';
 import { cardVariant, crownedFirst, matchesCardFilter } from './cardBar.js';
 import { Button } from './ui/Button.js';
 
@@ -22,6 +23,9 @@ interface AgentCardBarProps {
   onClose: (agentId: number) => void;
   /** Card hover highlights the character in the office (null = none). */
   onHover: (agentId: number | null) => void;
+  /** Sub-agents per main agent, shown as a row on the main agent's card. */
+  subagentsByParent?: ReadonlyMap<number, readonly SubagentRef[]>;
+  onSelectSubagent?: (subagentId: number) => void;
 }
 
 /**
@@ -51,6 +55,8 @@ export function AgentCardBar({
   onSelect,
   onClose,
   onHover,
+  subagentsByParent,
+  onSelectSubagent,
 }: AgentCardBarProps) {
   const [query, setQuery] = useState('');
   const [hideIdle, setHideIdle] = useState(false);
@@ -113,6 +119,8 @@ export function AgentCardBar({
             onSelect={onSelect}
             onClose={onClose}
             onHover={onHover}
+            subagents={subagentsByParent?.get(agentId)}
+            onSelectSubagent={onSelectSubagent}
           />
         ))}
         {shown.length === 0 && (

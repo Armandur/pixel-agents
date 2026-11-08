@@ -3,9 +3,11 @@ import { describe, expect, it } from 'vitest';
 import {
   cardVariant,
   crownedFirst,
+  groupSubagentsByParent,
   matchesCardFilter,
   mergeOrder,
   reorderByPointer,
+  subagentRow,
 } from '../src/components/cardBar.js';
 
 describe('cardVariant', () => {
@@ -87,5 +89,44 @@ describe('matchesCardFilter', () => {
 describe('crownedFirst', () => {
   it('moves crowned agents to the top and keeps both groups in order', () => {
     expect(crownedFirst([1, 2, 3, 4], (id) => id === 3 || id === 4)).toEqual([3, 4, 1, 2]);
+  });
+});
+
+describe('groupSubagentsByParent', () => {
+  it('groups by main agent in creation order and leaves childless agents out', () => {
+    const subs = [
+      { id: -1, parentAgentId: 1, label: 'Judge' },
+      { id: -2, parentAgentId: 2, label: 'Explore' },
+      { id: -3, parentAgentId: 1, label: 'Plan' },
+    ];
+    const grouped = groupSubagentsByParent(subs);
+    expect(grouped.get(1)?.map((s) => s.id)).toEqual([-1, -3]);
+    expect(grouped.get(2)?.map((s) => s.id)).toEqual([-2]);
+    expect(grouped.has(3)).toBe(false);
+  });
+});
+
+describe('subagentRow', () => {
+  it('is null without sub-agents', () => {
+    expect(subagentRow(undefined)).toBeNull();
+    expect(subagentRow([])).toBeNull();
+  });
+
+  it('shows count and labels, lists all in the title, targets the first', () => {
+    const row = subagentRow([
+      { id: -4, parentAgentId: 1, label: 'Judge TASK-3454' },
+      { id: -5, parentAgentId: 1, label: 'Explore' },
+    ]);
+    expect(row).toEqual({
+      text: '\u21b3 2: Judge TASK-3454, Explore',
+      title: 'Judge TASK-3454\nExplore',
+      firstId: -4,
+    });
+  });
+
+  it('falls back to a generic name for an empty label', () => {
+    expect(subagentRow([{ id: -1, parentAgentId: 1, label: ' ' }])?.text).toBe(
+      '\u21b3 1: Sub-agent',
+    );
   });
 });

@@ -1,5 +1,6 @@
 import { CROWNED_NAME_COLOR, providerBadge } from '../constants.js';
-import type { CardVariant } from './cardBar.js';
+import type { CardVariant, SubagentRef } from './cardBar.js';
+import { subagentRow } from './cardBar.js';
 import { CharacterMugShot } from './CharacterMugShot.js';
 import { Button } from './ui/Button.js';
 
@@ -57,6 +58,10 @@ interface AgentCardProps {
   /** Pointer entered (agentId) or left (null) the card: highlights the
    *  character in the office. */
   onHover?: (agentId: number | null) => void;
+  /** This agent's sub-agents; a non-empty list adds a row under the activity. */
+  subagents?: readonly SubagentRef[];
+  /** Select a sub-agent's character in the office (the row's click). */
+  onSelectSubagent?: (subagentId: number) => void;
 }
 
 /** One agent's card in the terminal sidebar — mug shot beside a
@@ -72,7 +77,10 @@ export function AgentCard({
   onSelect,
   onClose,
   onHover,
+  subagents,
+  onSelectSubagent,
 }: AgentCardProps) {
+  const subRow = subagentRow(subagents);
   const badge = providerBadge(appearance.providerId);
   return (
     <div
@@ -122,6 +130,21 @@ export function AgentCard({
           <span className="text-2xs text-text-muted overflow-hidden text-ellipsis whitespace-nowrap">
             {label.activity}
           </span>
+          {subRow && (
+            <button
+              type="button"
+              className="block w-0 min-w-full text-left text-2xs leading-none overflow-hidden text-ellipsis whitespace-nowrap text-text-muted hover:text-text cursor-pointer bg-transparent border-0 p-0"
+              title={subRow.title}
+              data-testid="agent-card-subagents"
+              onClick={(e) => {
+                // Select the sub-agent's figure, not this card's tab.
+                e.stopPropagation();
+                onSelectSubagent?.(subRow.firstId);
+              }}
+            >
+              {subRow.text}
+            </button>
+          )}
         </div>
       )}
       {/* Close on top, status dot at the bottom, both centred over the

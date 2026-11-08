@@ -60,6 +60,9 @@ export interface TerminalDrawerController {
   /** Card click: open the tab AND select + follow the character, so the card
    *  and the office stay in sync. */
   select: (agentId: number) => void;
+  /** Select + follow a character in the office without touching the tabs
+   *  (a card's sub-agent row selects the sub-agent's figure). */
+  selectCharacter: (characterId: number) => void;
   close: () => void;
   onResizeStart: (e: ReactMouseEvent) => void;
   getAppearance: (agentId: number) => AgentAppearance;
@@ -157,6 +160,11 @@ export function useTerminalDrawer({
       setIsOpen(true);
       getOfficeState().selectAndFollow(agentId);
     },
+    [getOfficeState],
+  );
+
+  const selectCharacter = useCallback(
+    (characterId: number) => getOfficeState().selectAndFollow(characterId),
     [getOfficeState],
   );
 
@@ -270,6 +278,7 @@ export function useTerminalDrawer({
     widthPx,
     reveal,
     select,
+    selectCharacter,
     close,
     onResizeStart,
     getAppearance,

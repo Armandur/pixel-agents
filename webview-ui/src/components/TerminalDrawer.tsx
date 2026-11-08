@@ -4,6 +4,7 @@ import { TERMINAL_DRAWER_RESIZE_HANDLE_PX } from '../constants.js';
 import type { TerminalConnectionStatus } from '../terminal/terminalClient.js';
 import type { AgentAppearance, AgentCardLabel, TabStatus } from './AgentCard.js';
 import { AgentCardBar } from './AgentCardBar.js';
+import type { SubagentRef } from './cardBar.js';
 import { TerminalPaneStack } from './TerminalPaneStack.js';
 import { Button } from './ui/Button.js';
 
@@ -29,6 +30,8 @@ interface TerminalDrawerProps {
   /** An agent's card name + activity. */
   labelFor: (agentId: number) => AgentCardLabel;
   onHoverAgent: (agentId: number | null) => void;
+  subagentsByParent?: ReadonlyMap<number, readonly SubagentRef[]>;
+  onSelectSubagent?: (subagentId: number) => void;
   onStatusChange: (agentId: number, status: TerminalConnectionStatus) => void;
 }
 
@@ -58,6 +61,8 @@ export function TerminalDrawer({
   statusFor,
   labelFor,
   onHoverAgent,
+  subagentsByParent,
+  onSelectSubagent,
   onStatusChange,
 }: TerminalDrawerProps) {
   if (agentIds.length === 0) return null;
@@ -75,6 +80,8 @@ export function TerminalDrawer({
         onSelect={onSelectAgent}
         onClose={onCloseAgent}
         onHover={onHoverAgent}
+        subagentsByParent={subagentsByParent}
+        onSelectSubagent={onSelectSubagent}
       />
 
       {/* Terminal panel — opens to the right of the card bar. display:none

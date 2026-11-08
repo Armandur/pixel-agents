@@ -87,7 +87,7 @@ webview-ui/                          React 19 + Canvas UI (depends only on core/
     components/                      React UI (toolbars, modals, settings)
       BottomToolbar.tsx, ZoomControls.tsx, SettingsModal.tsx, InfoModal.tsx,
       Tooltip.tsx, DebugView.tsx, ui/Button.tsx, ...
-      AgentCard.tsx, AgentCardBar.tsx  Agent cards (mug shot + status dot; on desktop: session name, provider letter badge, activity + idle time); the right-edge bar on desktop/VS Code: fixed filter row (name/provider) + hide-idle toggle over its own scrolling card list (list only)
+      AgentCard.tsx, AgentCardBar.tsx  Agent cards (mug shot + status dot; on desktop: session name, provider letter badge, activity + idle time); the right-edge bar on desktop/VS Code: fixed filter row (name/provider) + hide-idle toggle over its own scrolling card list (list only); a main agent's card lists its sub-agents in a row (`↳ N: labels`, click selects the first one's figure; groupSubagentsByParent/subagentRow in cardBar.ts)
       cardBar.ts                     Pure card-bar rules: cardVariant, mergeOrder, reorderByPointer, matchesCardFilter (Node-tested)
       TerminalDrawer.tsx             Desktop standalone: right-docked panel, cards as tabs
       TerminalPaneStack.tsx          Every agent's TerminalPane mounted, the shown one visible (both shells)

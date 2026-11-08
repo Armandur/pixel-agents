@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import { toMajorMinor } from './changelogData.js';
 import { AgentCardBar } from './components/AgentCardBar.js';
 import { BottomToolbar } from './components/BottomToolbar.js';
+import { groupSubagentsByParent } from './components/cardBar.js';
 import { ChangelogModal } from './components/ChangelogModal.js';
 import { ConnectionIndicator } from './components/ConnectionIndicator.js';
 import { DebugView } from './components/DebugView.js';
@@ -170,6 +171,12 @@ function App() {
     agentCrowned,
     agentIdleSince,
   });
+
+  // Sub-agents per main agent, for the row on each main agent's card.
+  const subagentsByParent = useMemo(
+    () => groupSubagentsByParent(subagentCharacters),
+    [subagentCharacters],
+  );
 
   const launchIntoDirectory = useCallback((directory: Directory) => {
     transport.send({ type: 'launchAgent', directoryPath: directory.path });
@@ -762,6 +769,8 @@ function App() {
               statusFor={terminalDrawer.statusFor}
               labelFor={terminalDrawer.labelFor}
               onHoverAgent={terminalDrawer.hover}
+              subagentsByParent={subagentsByParent}
+              onSelectSubagent={terminalDrawer.selectCharacter}
               onStatusChange={terminalDrawer.onStatusChange}
             />
           ) : (
@@ -775,6 +784,8 @@ function App() {
                 onSelect={handleCardSelect}
                 onClose={handleCloseAgent}
                 onHover={terminalDrawer.hover}
+                subagentsByParent={subagentsByParent}
+                onSelectSubagent={terminalDrawer.selectCharacter}
               />
             )
           )}
