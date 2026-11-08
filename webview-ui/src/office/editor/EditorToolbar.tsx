@@ -189,7 +189,7 @@ export function EditorToolbar({
   const thumbSize = 42; // 2x for items
 
   const isFloorActive = activeTool === EditTool.TILE_PAINT || activeTool === EditTool.EYEDROPPER;
-  const isWallActive = activeTool === EditTool.WALL_PAINT;
+  const isWallActive = activeTool === EditTool.WALL_PAINT || activeTool === EditTool.WALL_PICK;
   const isEraseActive = activeTool === EditTool.ERASE;
   const isCarpetActive =
     activeTool === EditTool.CARPET_PAINT || activeTool === EditTool.CARPET_PICK;
@@ -364,8 +364,16 @@ export function EditorToolbar({
       {/* Sub-panel: Wall — stacked bottom-to-top via column-reverse */}
       {isWallActive && (
         <div className="flex flex-col-reverse gap-4">
-          {/* Color toggle — just above tool row */}
+          {/* Copy + Color toggle — just above tool row */}
           <div className="flex gap-4 items-center">
+            <Button
+              variant={activeTool === EditTool.WALL_PICK ? 'active' : 'ghost'}
+              size="sm"
+              onClick={() => onToolChange(EditTool.WALL_PICK)}
+              title="Copy wall set + color from an existing wall"
+            >
+              Copy
+            </Button>
             <Button
               variant={showWallColor ? 'active' : 'default'}
               size="sm"

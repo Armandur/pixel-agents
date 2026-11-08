@@ -84,6 +84,8 @@ export const EditTool = {
   FURNITURE_PICK: 'furniture_pick',
   SELECT: 'select',
   EYEDROPPER: 'eyedropper',
+  /** Copy a wall tile's colour and set, then paint walls again. */
+  WALL_PICK: 'wall_pick',
   ERASE: 'erase',
   PETS: 'pets',
   CARPET_PAINT: 'carpet_paint',

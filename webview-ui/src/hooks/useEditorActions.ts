@@ -705,6 +705,16 @@ export function useEditorActions(
         case EditTool.COLOR_PICK:
           colorActions.pickColorAt(col, row);
           return;
+        case EditTool.WALL_PICK: {
+          const idx = row * layout.cols + col;
+          if (layout.tiles[idx] !== TileType.WALL) return;
+          const color = layout.tileColors?.[idx];
+          if (color) editorState.wallColor = { ...color };
+          editorState.selectedWallSet = layout.wallSetTiles?.[idx] ?? 0;
+          editorState.activeTool = EditTool.WALL_PAINT;
+          bumpTick();
+          return;
+        }
         case EditTool.EYEDROPPER: {
           const idx = row * layout.cols + col;
           const tile = layout.tiles[idx];
