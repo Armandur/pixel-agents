@@ -17,6 +17,7 @@ import {
   CONTEXT_GAUGE_WIDTH_PX,
   CONTEXT_WARN_THRESHOLD,
   CONVERSATION_BUBBLE_LIFT_PX,
+  LOUNGE_CHAT_BUBBLE_LIFT_PX,
   OVERLAY_BUBBLE_Z_INDEX,
   OVERLAY_LABEL_SELECTED_Z_INDEX,
   OVERLAY_LABEL_Z_INDEX,
@@ -31,6 +32,7 @@ import {
   IDLE_ACTIVITY_TEXT,
   WAITING_INPUT_ACTIVITY_TEXT,
 } from '../activityText.js';
+import { loungeChatLines } from '../engine/lounge.js';
 import type { OfficeState } from '../engine/officeState.js';
 import { overlayProjection } from '../projection.js';
 import { getCachedSprite } from '../sprites/spriteCache.js';
@@ -123,6 +125,8 @@ export function ToolOverlay({
 
   // All character IDs
   const allIds = [...agents, ...subagentCharacters.map((s) => s.id)];
+  // Pretend coffee-break chatter of agents mingling in the lounge (no real text).
+  const loungeChat = loungeChatLines(officeState.characters.values());
 
   return (
     <>
@@ -194,6 +198,32 @@ export function ToolOverlay({
             <>
               {bubbleNode}
               {talkNode}
+            </>
+          );
+        }
+
+        // Mingling in the lounge: a short made-up phrase, same look and place
+        // as the real talk bubble (loungeChatLines never overlaps that one).
+        const chatLine = loungeChat.get(id);
+        if (chatLine !== undefined) {
+          const chatSittingOff = ch.state === CharacterState.TYPE ? CHARACTER_SITTING_OFFSET_PX : 0;
+          bubbleNode = (
+            <>
+              {bubbleNode}
+              <div
+                className="absolute -translate-x-1/2 -translate-y-full pointer-events-none pixel-panel border-border px-8 py-4 text-base leading-tight max-w-2xs overflow-hidden text-ellipsis whitespace-nowrap"
+                style={{
+                  left: project.toScreenX(ch.x),
+                  top:
+                    project.toScreenY(ch.y + chatSittingOff - TOOL_OVERLAY_VERTICAL_OFFSET) -
+                    LOUNGE_CHAT_BUBBLE_LIFT_PX,
+                  zIndex: OVERLAY_BUBBLE_Z_INDEX,
+                }}
+                data-testid="lounge-chat-bubble"
+                data-agent-id={id}
+              >
+                {chatLine}
+              </div>
             </>
           );
         }

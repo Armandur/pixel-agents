@@ -1,4 +1,7 @@
 import {
+  LOUNGE_CHAT_PHRASES,
+  LOUNGE_CHAT_TURN_MAX_SEC,
+  LOUNGE_CHAT_TURN_MIN_SEC,
   LOUNGE_IDLE_SEC,
   LOUNGE_SIT_MAX_SEC,
   LOUNGE_SIT_MIN_SEC,
@@ -18,6 +21,14 @@ import { facingToward } from './conversation.js';
 
 export type LoungeActivity = 'sit' | 'stroll' | 'mingle';
 
+/** The pretend chat of a mingle: who "speaks" now and what the bubble says. */
+export interface LoungeChat {
+  speakerId: number;
+  phrase: string;
+  /** Seconds left of this turn. */
+  timer: number;
+}
+
 /** What a lounging character is doing. Replaces the FSM while set. */
 export interface LoungeState {
   phase: 'walking' | 'resting';
@@ -28,6 +39,8 @@ export interface LoungeState {
   partnerId?: number;
   /** Seconds left of sitting/standing once arrived. */
   timer: number;
+  /** Mingle only: the simulated chat, owned by the character that walked up. */
+  chat?: LoungeChat;
 }
 
 /** "col,row" keys of every tile painted with an Area whose role is lounge. */
@@ -78,6 +91,62 @@ export function chooseActivity(
     pick -= w;
   }
   return weighted.find(([, w]) => w > 0)![0];
+}
+
+function chatTurn(speakerId: number, previous: string | undefined, random: () => number) {
+  const pool = LOUNGE_CHAT_PHRASES.filter((p) => p !== previous);
+  return {
+    speakerId,
+    phrase: pool[Math.floor(random() * pool.length)],
+    timer:
+      LOUNGE_CHAT_TURN_MIN_SEC + random() * (LOUNGE_CHAT_TURN_MAX_SEC - LOUNGE_CHAT_TURN_MIN_SEC),
+  };
+}
+
+/** Start the pretend chat when a mingle begins; either side may open. */
+export function startLoungeChat(
+  selfId: number,
+  partnerId: number,
+  random: () => number,
+): LoungeChat {
+  return chatTurn(random() < 0.5 ? selfId : partnerId, undefined, random);
+}
+
+/** Count the turn down; when it ends the other side speaks a fresh phrase. */
+export function advanceLoungeChat(
+  chat: LoungeChat,
+  selfId: number,
+  partnerId: number,
+  dt: number,
+  random: () => number,
+): void {
+  chat.timer -= dt;
+  if (chat.timer > 0) return;
+  Object.assign(
+    chat,
+    chatTurn(chat.speakerId === selfId ? partnerId : selfId, chat.phrase, random),
+  );
+}
+
+/**
+ * The pretend-chat bubble text per character id: only while a mingle is
+ * under way (the walker resting beside a partner that is also resting), and
+ * never for a character that is showing a real conversation bubble.
+ */
+export function loungeChatLines(characters: Iterable<Character>): Map<number, string> {
+  const all = new Map<number, Character>();
+  for (const c of characters) all.set(c.id, c);
+  const lines = new Map<number, string>();
+  for (const c of all.values()) {
+    const lounge = c.lounge;
+    if (lounge?.activity !== 'mingle' || lounge.phase !== 'resting' || !lounge.chat) continue;
+    const partner = lounge.partnerId !== undefined ? all.get(lounge.partnerId) : undefined;
+    if (partner?.lounge?.phase !== 'resting') continue;
+    const speaker = lounge.chat.speakerId === c.id ? c : partner;
+    if (speaker.visit?.phase === 'talking') continue;
+    lines.set(speaker.id, lounge.chat.phrase);
+  }
+  return lines;
 }
 
 /** Begin walking to a lounge spot (the path is already on `ch.path`). */
@@ -133,12 +202,14 @@ export function advanceLounge(
           partner.dir = facingToward(partner, ch);
           partner.lounge.timer = Math.max(partner.lounge.timer, lounge.timer);
         }
+        lounge.chat = startLoungeChat(ch.id, partner.id, random);
       }
       return 'resting';
     }
     return 'resting';
   }
   lounge.timer -= dt;
+  if (lounge.chat && partner) advanceLoungeChat(lounge.chat, ch.id, partner.id, dt, random);
   if (lounge.timer > 0) return 'resting';
   releasePartner(ch, partner, seats);
   return 'next';

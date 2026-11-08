@@ -86,6 +86,24 @@ export const LOUNGE_SIT_MAX_SEC = 90;
 /** How long it stands (strolling or with another agent) before moving on. */
 export const LOUNGE_STAND_MIN_SEC = 8;
 export const LOUNGE_STAND_MAX_SEC = 20;
+/** Seconds one side of a mingle "talks" before the other takes the turn. */
+export const LOUNGE_CHAT_TURN_MIN_SEC = 3;
+export const LOUNGE_CHAT_TURN_MAX_SEC = 5;
+/** CSS px the pretend-chat bubble sits above the label anchor. Lower than a
+ *  real talk bubble: an idle agent's label panel is usually hidden, so the
+ *  bubble belongs just over the head. */
+export const LOUNGE_CHAT_BUBBLE_LIFT_PX = 0;
+/** Neutral coffee-break phrases for the pretend chat bubble. Never real session text. */
+export const LOUNGE_CHAT_PHRASES = [
+  'Kaffe?',
+  'Hur går det?',
+  'Haha',
+  'Mm, precis',
+  'Fika snart?',
+  'Jaså?',
+  'Visst',
+  '...',
+] as const;
 /** A crowned agent's name on its card. */
 export const CROWNED_NAME_COLOR = '#ffd700';
 export const GHOST_PREVIEW_SPRITE_ALPHA = 0.5;
