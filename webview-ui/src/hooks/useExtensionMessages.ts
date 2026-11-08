@@ -96,6 +96,8 @@ interface ExtensionMessageState {
   agentAwaitingInput: Record<number, boolean>;
   /** Latch: true once an agent has had any activity (first tool or status). */
   agentSeenActivity: Record<number, boolean>;
+  /** The CLI's own session name per agent (agentSessionName); absent = none known. */
+  agentSessionNames: Record<number, string>;
   subagentTools: Record<number, Record<string, ToolActivity[]>>;
   subagentCharacters: SubagentCharacter[];
   layoutReady: boolean;
@@ -185,6 +187,7 @@ export function useExtensionMessages(
   const [agentStatuses, setAgentStatuses] = useState<Record<number, string>>({});
   const [agentAwaitingInput, setAgentAwaitingInput] = useState<Record<number, boolean>>({});
   const [agentSeenActivity, setAgentSeenActivity] = useState<Record<number, boolean>>({});
+  const [agentSessionNames, setAgentSessionNames] = useState<Record<number, string>>({});
   const markSeenActivity = (id: number) =>
     setAgentSeenActivity((prev) => (prev[id] ? prev : { ...prev, [id]: true }));
   const [subagentTools, setSubagentTools] = useState<
@@ -851,6 +854,10 @@ export function useExtensionMessages(
           msg.leadAgentId as number | undefined,
           msg.teamUsesTmux as boolean | undefined,
         );
+      } else if (msg.type === 'agentSessionName') {
+        const id = msg.id as number;
+        const name = msg.sessionName as string;
+        setAgentSessionNames((prev) => (prev[id] === name ? prev : { ...prev, [id]: name }));
       } else if (msg.type === 'agentContextUsage') {
         const id = msg.id as number;
         os.setAgentContext(id, msg.contextTokens as number, msg.maxContextTokens as number);
@@ -884,6 +891,7 @@ export function useExtensionMessages(
     agentStatuses,
     agentAwaitingInput,
     agentSeenActivity,
+    agentSessionNames,
     subagentTools,
     subagentCharacters,
     layoutReady,

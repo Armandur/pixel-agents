@@ -100,7 +100,7 @@ export function AgentCard({
           title={`${label.name}: ${label.activity}`}
         >
           <span className="flex items-center gap-4 min-w-0">
-            <span className="text-2xs text-text overflow-hidden text-ellipsis whitespace-nowrap">
+            <span className="text-sm text-text overflow-hidden text-ellipsis whitespace-nowrap">
               {label.name}
             </span>
             {badge && (

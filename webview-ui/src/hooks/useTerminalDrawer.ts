@@ -34,6 +34,7 @@ interface TerminalDrawerInputs {
   agentStatuses: Record<number, string>;
   agentAwaitingInput: Record<number, boolean>;
   agentSeenActivity: Record<number, boolean>;
+  agentSessionNames: Record<number, string>;
 }
 
 export interface TerminalDrawerController {
@@ -97,6 +98,7 @@ export function useTerminalDrawer({
   agentStatuses,
   agentAwaitingInput,
   agentSeenActivity,
+  agentSessionNames,
 }: TerminalDrawerInputs): TerminalDrawerController {
   const [activeAgentId, setActiveAgentId] = useState<number | null>(null);
   const [lastOpened, setLastOpened] = useState<{ agentId: number; seq: number } | null>(null);
@@ -215,14 +217,14 @@ export function useTerminalDrawer({
     (id: number): AgentCardLabel => {
       const ch = getOfficeState().characters.get(id);
       return {
-        name: agentDisplayName(id, ch),
+        name: agentDisplayName(id, ch, agentSessionNames[id]),
         // The provider shows as the mug shot's badge, not in the name; the
         // filter still matches it ("codex").
         provider: providerBadge(ch?.providerId)?.label,
         activity: ch ? characterActivityText(ch, agentTools[id]) : IDLE_ACTIVITY_TEXT,
       };
     },
-    [getOfficeState, agentTools],
+    [getOfficeState, agentTools, agentSessionNames],
   );
 
   const hover = useCallback(

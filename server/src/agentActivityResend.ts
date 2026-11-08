@@ -31,6 +31,10 @@ export function resendAgentActivity(
       });
     }
 
+    if (agent.sessionName) {
+      send({ type: 'agentSessionName', id, sessionName: agent.sessionName });
+    }
+
     // 2. Regular (non-background) tools
     for (const [toolId, status] of agent.activeToolStatuses) {
       // Skip background tools here — they're sent separately below with proper flags

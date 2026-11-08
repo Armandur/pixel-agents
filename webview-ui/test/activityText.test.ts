@@ -44,4 +44,11 @@ describe('agentDisplayName', () => {
     expect(agentDisplayName(3, ch({ directoryName: 'svky.se' }))).toBe('svky.se');
     expect(agentDisplayName(4, undefined)).toBe('Agent 4');
   });
+
+  it("prefers the CLI's session name over the Directory", () => {
+    expect(agentDisplayName(5, ch({ directoryName: 'Kistskanning' }), 'Kistvakt')).toBe('Kistvakt');
+    expect(agentDisplayName(6, ch({ isTeamLead: true, directoryName: 'x' }), 'Dirigent')).toBe(
+      'LEAD · Dirigent',
+    );
+  });
 });

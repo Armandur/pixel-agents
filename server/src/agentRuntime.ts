@@ -15,6 +15,7 @@ import * as path from 'path';
 import type { HookProvider } from '../../core/src/provider.js';
 import { createAgentState } from './agentState.js';
 import type { AgentStateStore } from './agentStateStore.js';
+import { SESSION_NAME_POLL_INTERVAL_MS } from './constants.js';
 import { DismissalTracker } from './dismissalTracker.js';
 import {
   adoptExternalSessionFromHook,
@@ -38,8 +39,9 @@ import type { HookEvent } from './hookEventHandler.js';
 import { HookEventHandler } from './hookEventHandler.js';
 import { assignPaletteIfNeeded } from './paletteAssigner.js';
 import { PathSet, pathsMatch } from './pathKey.js';
-import { observedProviders } from './providers/index.js';
+import { hookProviders, observedProviders } from './providers/index.js';
 import { repairedDirectoryName } from './sessionDirectoryName.js';
+import { refreshSessionNames } from './sessionNames.js';
 import { SessionRouter } from './sessionRouter.js';
 import { SubagentWatch } from './subagentWatch.js';
 import { cancelPermissionTimer, cancelWaitingTimer } from './timerManager.js';
@@ -75,6 +77,7 @@ export class AgentRuntime {
   readonly activeAgentId = { current: null as number | null };
   private externalScanTimer: ReturnType<typeof setInterval> | null = null;
   private staleCheckTimer: ReturnType<typeof setInterval> | null = null;
+  private sessionNameTimer: ReturnType<typeof setInterval> | null = null;
 
   // Configuration refs (mutable, shared with scanners)
   readonly watchAllSessions = { current: false };
@@ -468,6 +471,17 @@ export class AgentRuntime {
     );
   }
 
+  /** Poll every provider's session-name registry onto the agents. */
+  startSessionNamePolling(): void {
+    if (this.sessionNameTimer) return;
+    const providers = [...hookProviders, ...observedProviders];
+    refreshSessionNames(this.store, providers);
+    this.sessionNameTimer = setInterval(
+      () => refreshSessionNames(this.store, providers),
+      SESSION_NAME_POLL_INTERVAL_MS,
+    );
+  }
+
   // ── Restore persisted external agents (standalone) ──
 
   /**
@@ -578,6 +592,10 @@ export class AgentRuntime {
     if (this.staleCheckTimer) {
       clearInterval(this.staleCheckTimer);
       this.staleCheckTimer = null;
+    }
+    if (this.sessionNameTimer) {
+      clearInterval(this.sessionNameTimer);
+      this.sessionNameTimer = null;
     }
 
     for (const id of [...this.store.keys()]) {

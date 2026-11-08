@@ -47,8 +47,14 @@ export function characterActivityText(ch: Character, tools: ToolActivity[] | und
   return getActivityText(tools, ch.isActive, ch.bubbleType, ch.waitingAwaitingInput ?? false);
 }
 
-/** What to call an agent on its card: team role, then Directory, then id. */
-export function agentDisplayName(agentId: number, ch: Character | undefined): string {
-  if (ch?.isTeamLead) return ch.directoryName ? `LEAD · ${ch.directoryName}` : 'LEAD';
-  return ch?.agentName || ch?.directoryName || `Agent ${agentId}`;
+/** What to call an agent on its card: team role, then the CLI's session
+ *  name, then the Directory, then the id. */
+export function agentDisplayName(
+  agentId: number,
+  ch: Character | undefined,
+  sessionName?: string,
+): string {
+  const own = sessionName || ch?.directoryName;
+  if (ch?.isTeamLead) return own ? `LEAD · ${own}` : 'LEAD';
+  return ch?.agentName || own || `Agent ${agentId}`;
 }

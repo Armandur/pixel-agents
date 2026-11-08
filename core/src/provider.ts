@@ -116,6 +116,12 @@ export interface HookProvider {
    *  previous estimate and widens it if a context ever exceeds it. */
   contextWindowForModel?(model: string | undefined): number | undefined;
 
+  /** The names the CLI itself gives its sessions (what the user renamed them
+   *  to, or a derived default), by session id. Read on a poll, so it must be
+   *  cheap. Undefined = this CLI has no session names; agents fall back to
+   *  their Directory name. */
+  sessionNames?(): Map<string, string>;
+
   // ── Optional file fallback (heuristic mode) ──
 
   /** Session directories to scan. Undefined = no file fallback. */

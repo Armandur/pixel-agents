@@ -85,3 +85,7 @@ export const CLAUDE_SMALL_CONTEXT_WINDOW = 200_000;
  *  guessing small for a large model pins every gauge in the red, while the
  *  reverse is a quiet under-read that the runtime's widening still corrects. */
 export const CLAUDE_SMALL_CONTEXT_MODEL_PATTERN = /haiku|claude-[123]|-4-[01]\b/i;
+
+/** Claude Code's live-session registry under the home directory: one
+ *  `<pid>.json` per running CLI, carrying the session's name. */
+export const CLAUDE_SESSION_REGISTRY_DIR = '.claude/sessions';
