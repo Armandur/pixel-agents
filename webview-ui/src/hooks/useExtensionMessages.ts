@@ -98,6 +98,8 @@ interface ExtensionMessageState {
   agentSeenActivity: Record<number, boolean>;
   /** The CLI's own session name per agent (agentSessionName); absent = none known. */
   agentSessionNames: Record<number, string>;
+  /** Agents whose session name is in config crownedSessions. */
+  agentCrowned: Record<number, boolean>;
   /** Epoch ms since each idle agent went idle (agentIdleSince); absent = working. */
   agentIdleSince: Record<number, number>;
   subagentTools: Record<number, Record<string, ToolActivity[]>>;
@@ -190,6 +192,7 @@ export function useExtensionMessages(
   const [agentAwaitingInput, setAgentAwaitingInput] = useState<Record<number, boolean>>({});
   const [agentSeenActivity, setAgentSeenActivity] = useState<Record<number, boolean>>({});
   const [agentSessionNames, setAgentSessionNames] = useState<Record<number, string>>({});
+  const [agentCrowned, setAgentCrowned] = useState<Record<number, boolean>>({});
   const [agentIdleSince, setAgentIdleSince] = useState<Record<number, number>>({});
   const markSeenActivity = (id: number) =>
     setAgentSeenActivity((prev) => (prev[id] ? prev : { ...prev, [id]: true }));
@@ -861,6 +864,9 @@ export function useExtensionMessages(
         const id = msg.id as number;
         const name = msg.sessionName as string;
         setAgentSessionNames((prev) => (prev[id] === name ? prev : { ...prev, [id]: name }));
+        const crowned = msg.crowned === true;
+        setAgentCrowned((prev) => (!!prev[id] === crowned ? prev : { ...prev, [id]: crowned }));
+        os.setAgentCrowned(id, crowned);
       } else if (msg.type === 'agentIdleSince') {
         const id = msg.id as number;
         const since = typeof msg.since === 'number' ? msg.since : undefined;
@@ -905,6 +911,7 @@ export function useExtensionMessages(
     agentAwaitingInput,
     agentSeenActivity,
     agentSessionNames,
+    agentCrowned,
     agentIdleSince,
     subagentTools,
     subagentCharacters,

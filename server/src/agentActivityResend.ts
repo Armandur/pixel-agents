@@ -36,7 +36,12 @@ export function resendAgentActivity(
     }
 
     if (agent.sessionName) {
-      send({ type: 'agentSessionName', id, sessionName: agent.sessionName });
+      send({
+        type: 'agentSessionName',
+        id,
+        sessionName: agent.sessionName,
+        crowned: !!agent.crowned,
+      });
     }
 
     // 2. Regular (non-background) tools

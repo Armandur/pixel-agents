@@ -19,6 +19,7 @@ import {
   CARPET_DEFAULT_COLOR,
   CHARACTER_SITTING_OFFSET_PX,
   CHARACTER_Z_SORT_OFFSET,
+  CROWN_HAIR_OVERLAP_PX,
   DELETE_BUTTON_BG,
   FALLBACK_FLOOR_COLOR,
   GHOST_BORDER_HOVER_FILL,
@@ -54,8 +55,9 @@ import {
   hasCarpetSprites,
 } from '../sprites/carpetTiles.js';
 import { getPetSprites } from '../sprites/petSpriteData.js';
+import { getSpriteTopAnchor } from '../sprites/spriteAnchor.js';
 import { getCachedSprite, getOutlineSprite } from '../sprites/spriteCache.js';
-import { BUBBLE_HEART_SPRITE, getCharacterSprites } from '../sprites/spriteData.js';
+import { BUBBLE_HEART_SPRITE, CROWN_SPRITE, getCharacterSprites } from '../sprites/spriteData.js';
 import type {
   AreaDefinition,
   CarpetTile,
@@ -455,6 +457,24 @@ export function renderScene(
         c.restore();
       },
     });
+
+    if (ch.crowned) {
+      const crown = getCachedSprite(CROWN_SPRITE, zoom);
+      const head = getSpriteTopAnchor(spriteData);
+      const crownW = CROWN_SPRITE[0].length;
+      const crownH = CROWN_SPRITE.length;
+      const cx = drawX + Math.round(head.centerCol - crownW / 2) * zoom;
+      const cy = drawY + (head.row + CROWN_HAIR_OVERLAP_PX - crownH) * zoom;
+      drawables.push({
+        zY: charZY + OUTLINE_Z_SORT_OFFSET, // just in front of its own character
+        draw: (c) => {
+          c.save();
+          c.globalAlpha = alpha;
+          c.drawImage(crown, cx, cy);
+          c.restore();
+        },
+      });
+    }
 
     // Every agent wears a small provider badge (Claude orange, Codex purple).
     const badge = providerBadge(ch.providerId);

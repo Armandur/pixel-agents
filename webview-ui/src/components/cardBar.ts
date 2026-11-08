@@ -65,3 +65,8 @@ export function matchesCardFilter(
   const q = query.trim().toLowerCase();
   return q === '' || `${name} ${provider ?? ''}`.toLowerCase().includes(q);
 }
+
+/** Crowned agents first, everyone else after, each group in its given order. */
+export function crownedFirst(ids: number[], isCrowned: (id: number) => boolean): number[] {
+  return [...ids.filter(isCrowned), ...ids.filter((id) => !isCrowned(id))];
+}

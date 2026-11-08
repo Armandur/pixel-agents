@@ -210,6 +210,7 @@ export interface AgentSessionName {
   type: 'agentSessionName';
   id: number;
   sessionName: string;
+  crowned?: boolean;
 }
 
 export interface AgentIdleSince {

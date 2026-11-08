@@ -6,6 +6,7 @@ import { Direction as Dir } from '../types.js';
 import bubblePermissionData from './bubble-permission.json';
 import bubblePetData from './bubble-pet.json';
 import bubbleWaitingData from './bubble-waiting.json';
+import crownData from './crown.json';
 
 // ── Speech Bubble Sprites ───────────────────────────────────────
 
@@ -26,6 +27,9 @@ export const BUBBLE_WAITING_SPRITE: SpriteData = resolveBubbleSprite(bubbleWaiti
 
 /** Heart bubble: pet petting feedback (11x13) */
 export const BUBBLE_HEART_SPRITE: SpriteData = resolveBubbleSprite(bubblePetData);
+
+/** Crown for agents listed in config crownedSessions (9x5) */
+export const CROWN_SPRITE: SpriteData = resolveBubbleSprite(crownData);
 
 // ════════════════════════════════════════════════════════════════
 // Loaded character sprites (from PNG assets)

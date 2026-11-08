@@ -81,6 +81,7 @@ export class OfficeState {
   }
   cameraFollowId: number | null = null;
   hoveredAgentId: number | null = null;
+  private readonly crownedAgentIds = new Set<number>();
   hoveredTile: { col: number; row: number } | null = null;
   /** Maps "parentId:toolId" → sub-agent character ID (negative) */
   subagentIdMap: Map<string, number> = new Map();
@@ -507,6 +508,7 @@ export class OfficeState {
     if (!skipSpawnEffect) {
       startMatrixEffect(ch, 'spawn');
     }
+    ch.crowned = this.crownedAgentIds.has(id);
     this.characters.set(id, ch);
   }
 
@@ -1120,6 +1122,16 @@ export class OfficeState {
     const ch = this.characters.get(id);
     if (!ch) return;
     ch.providerId = providerId;
+  }
+
+  /** Crown an agent (config crownedSessions). Remembered for an agent whose
+   *  character does not exist yet: the session name can arrive before the
+   *  layout has placed it, and addAgent applies it then. */
+  setAgentCrowned(id: number, crowned: boolean): void {
+    if (crowned) this.crownedAgentIds.add(id);
+    else this.crownedAgentIds.delete(id);
+    const ch = this.characters.get(id);
+    if (ch) ch.crowned = crowned;
   }
 
   setAgentContext(id: number, contextTokens: number, maxContextTokens: number): void {

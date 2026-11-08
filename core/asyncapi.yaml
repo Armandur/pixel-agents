@@ -479,6 +479,11 @@ components:
           type: integer
         sessionName:
           type: string
+        crowned:
+          type: boolean
+          description: >-
+            The session name is listed in the config's crownedSessions; the
+            office draws the agent with a crown.
 
     AgentContextUsage:
       description: |

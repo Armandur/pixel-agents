@@ -94,8 +94,8 @@ describe('refreshSessionNames', () => {
     refreshSessionNames(store, [provider({})]);
 
     expect(sent).toEqual([
-      { type: 'agentSessionName', id: 1, sessionName: 'dirigent-9a' },
-      { type: 'agentSessionName', id: 1, sessionName: 'Dirigent' },
+      { type: 'agentSessionName', id: 1, sessionName: 'dirigent-9a', crowned: false },
+      { type: 'agentSessionName', id: 1, sessionName: 'Dirigent', crowned: false },
     ]);
     expect(store.get(1)?.sessionName).toBe('Dirigent');
   });
@@ -107,6 +107,25 @@ describe('refreshSessionNames', () => {
     const resent: Record<string, unknown>[] = [];
     resendAgentActivity((m) => resent.push(m), store);
 
-    expect(resent).toContainEqual({ type: 'agentSessionName', id: 2, sessionName: 'Kistvakt' });
+    expect(resent).toContainEqual({
+      type: 'agentSessionName',
+      id: 2,
+      sessionName: 'Kistvakt',
+      crowned: false,
+    });
+  });
+
+  it('crowns a listed name case-insensitively, and re-broadcasts when the list changes', () => {
+    const { store, sent } = storeWith(3);
+    const names = provider({ 'sess-3': 'Dirigent' });
+
+    refreshSessionNames(store, [names], ['dirigent']);
+    refreshSessionNames(store, [names], ['dirigent']);
+    refreshSessionNames(store, [names], []);
+
+    expect(sent).toEqual([
+      { type: 'agentSessionName', id: 3, sessionName: 'Dirigent', crowned: true },
+      { type: 'agentSessionName', id: 3, sessionName: 'Dirigent', crowned: false },
+    ]);
   });
 });

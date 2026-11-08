@@ -245,6 +245,8 @@ export interface Character {
   agentName?: string;
   /** Whether this agent is the team lead */
   isTeamLead?: boolean;
+  /** Session name is listed in config crownedSessions: drawn with a crown. */
+  crowned?: boolean;
   /** ID of the lead agent (set on teammates) */
   leadAgentId?: number;
   /** True when lead spawns teammates via tmux (run_in_background Agent calls) */

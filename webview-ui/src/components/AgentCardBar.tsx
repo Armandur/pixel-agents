@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { CARD_IDLE_TICK_MS, TERMINAL_SIDEBAR_WIDTH_PX } from '../constants.js';
 import type { AgentAppearance, AgentCardLabel, TabStatus } from './AgentCard.js';
 import { AgentCard } from './AgentCard.js';
-import { cardVariant, matchesCardFilter } from './cardBar.js';
+import { cardVariant, crownedFirst, matchesCardFilter } from './cardBar.js';
 import { Button } from './ui/Button.js';
 
 interface AgentCardBarProps {
@@ -63,8 +63,11 @@ export function AgentCardBar({
 
   if (agentIds.length === 0) return null;
 
-  const shown = agentIds.filter((id) =>
-    matchesCardFilter({ ...labelFor(id), status: statusFor(id) }, { query, hideIdle }),
+  const shown = crownedFirst(
+    agentIds.filter((id) =>
+      matchesCardFilter({ ...labelFor(id), status: statusFor(id) }, { query, hideIdle }),
+    ),
+    (id) => labelFor(id).crowned === true,
   );
 
   return (

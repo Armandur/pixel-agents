@@ -63,6 +63,12 @@ export const PROVIDER_BADGES: Record<string, ProviderBadge> = {
 export function providerBadge(providerId: string | undefined): ProviderBadge | undefined {
   return PROVIDER_BADGES[providerId ?? 'claude'];
 }
+/** Sprite rows the crown's bottom overlaps the head's top row by, so it sits
+ *  on the hair instead of floating. The head's top row is measured per drawn
+ *  frame: it moves between palettes, directions and the typing lean. */
+export const CROWN_HAIR_OVERLAP_PX = 1;
+/** A crowned agent's name on its card. */
+export const CROWNED_NAME_COLOR = '#ffd700';
 /** Badge size and offset from the sprite's bottom-right corner, in sprite pixels. */
 export const PROVIDER_BADGE_SIZE_PX = 4;
 export const PROVIDER_BADGE_INSET_X_PX = 3;

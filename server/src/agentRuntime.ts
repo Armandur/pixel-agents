@@ -15,6 +15,7 @@ import * as path from 'path';
 import type { HookProvider } from '../../core/src/provider.js';
 import { createAgentState } from './agentState.js';
 import type { AgentStateStore } from './agentStateStore.js';
+import { readConfig } from './configPersistence.js';
 import { SESSION_NAME_POLL_INTERVAL_MS } from './constants.js';
 import { DismissalTracker } from './dismissalTracker.js';
 import {
@@ -478,11 +479,10 @@ export class AgentRuntime {
   startSessionNamePolling(): void {
     if (this.sessionNameTimer) return;
     const providers = [...hookProviders, ...observedProviders];
-    refreshSessionNames(this.store, providers);
-    this.sessionNameTimer = setInterval(
-      () => refreshSessionNames(this.store, providers),
-      SESSION_NAME_POLL_INTERVAL_MS,
-    );
+    // The crown list is re-read each tick so a hand edit takes effect live.
+    const refresh = () => refreshSessionNames(this.store, providers, readConfig().crownedSessions);
+    refresh();
+    this.sessionNameTimer = setInterval(refresh, SESSION_NAME_POLL_INTERVAL_MS);
   }
 
   // ── Restore persisted external agents (standalone) ──

@@ -1,0 +1,20 @@
+{
+  "name": "crown",
+  "description": "Crown worn by agents whose session is listed in config crownedSessions (9x5), sits on the head's top row",
+  "width": 9,
+  "height": 5,
+  "palette": {
+    "_": "",
+    "D": "#8a5a00",
+    "G": "#ffd700",
+    "R": "#e0303c",
+    "B": "#3070e0"
+  },
+  "pixels": [
+    ["G","_","_","_","G","_","_","_","G"],
+    ["G","G","_","G","G","G","_","G","G"],
+    ["G","G","G","G","G","G","G","G","G"],
+    ["G","R","G","G","B","G","G","R","G"],
+    ["D","D","D","D","D","D","D","D","D"]
+  ]
+}

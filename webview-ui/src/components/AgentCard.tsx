@@ -1,4 +1,4 @@
-import { providerBadge } from '../constants.js';
+import { CROWNED_NAME_COLOR, providerBadge } from '../constants.js';
 import type { CardVariant } from './cardBar.js';
 import { CharacterMugShot } from './CharacterMugShot.js';
 import { Button } from './ui/Button.js';
@@ -17,6 +17,8 @@ export interface AgentCardLabel {
   activity: string;
   /** Provider label ("Claude", "Codex") for the filter; shown as the badge. */
   provider?: string;
+  /** Session listed in config crownedSessions: gold name, sorted first. */
+  crowned?: boolean;
 }
 
 /** Agent activity reflected by the tab's status dot. */
@@ -100,7 +102,10 @@ export function AgentCard({
           title={`${label.name}: ${label.activity}`}
         >
           <span className="flex items-center gap-4 min-w-0">
-            <span className="text-sm text-text overflow-hidden text-ellipsis whitespace-nowrap">
+            <span
+              className="text-sm text-text overflow-hidden text-ellipsis whitespace-nowrap"
+              style={label.crowned ? { color: CROWNED_NAME_COLOR } : undefined}
+            >
               {label.name}
             </span>
             {badge && (

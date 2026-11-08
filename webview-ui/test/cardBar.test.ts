@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   cardVariant,
+  crownedFirst,
   matchesCardFilter,
   mergeOrder,
   reorderByPointer,
@@ -80,5 +81,11 @@ describe('matchesCardFilter', () => {
     expect(matchesCardFilter({ name: 'a', status: null }, hide)).toBe(false);
     expect(matchesCardFilter({ name: 'a', status: 'attention' }, hide)).toBe(true);
     expect(matchesCardFilter({ name: 'a', status: 'working' }, hide)).toBe(true);
+  });
+});
+
+describe('crownedFirst', () => {
+  it('moves crowned agents to the top and keeps both groups in order', () => {
+    expect(crownedFirst([1, 2, 3, 4], (id) => id === 3 || id === 4)).toEqual([3, 4, 1, 2]);
   });
 });

@@ -87,6 +87,7 @@ function App() {
     agentAwaitingInput,
     agentSeenActivity,
     agentSessionNames,
+    agentCrowned,
     agentIdleSince,
     subagentTools,
     subagentCharacters,
@@ -166,6 +167,7 @@ function App() {
     agentAwaitingInput,
     agentSeenActivity,
     agentSessionNames,
+    agentCrowned,
     agentIdleSince,
   });
 

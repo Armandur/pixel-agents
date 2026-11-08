@@ -74,6 +74,9 @@ export interface PixelAgentsConfig {
   /** User-defined Directories. Machine-wide by decision: a Directory defined
    *  from the phone shows up in VS Code and vice versa. */
   directories: UserDirectory[];
+  /** Session names (case-insensitive) whose agents wear a crown in the
+   *  office, e.g. ["Dirigent"]. Machine-wide, hand-edited. */
+  crownedSessions: string[];
 }
 
 const DEFAULT_ADAPTER_SETTINGS: AdapterSettings = {
@@ -216,6 +219,7 @@ function emptyConfig(): PixelAgentsConfig {
     hooksConsent: {},
     hooksEnabled: {},
     directories: [],
+    crownedSessions: [],
   };
 }
 
@@ -236,6 +240,9 @@ export function readConfig(): PixelAgentsConfig {
       hooksConsent: parseHooksConsent(parsed.hooksConsent),
       hooksEnabled: parseHooksEnabled(parsed.hooksEnabled),
       directories: parseUserDirectories(parsed.directories),
+      crownedSessions: Array.isArray(parsed.crownedSessions)
+        ? parsed.crownedSessions.filter((s): s is string => typeof s === 'string')
+        : [],
     };
   } catch (err) {
     console.error('[Pixel Agents] Failed to read config file:', err);

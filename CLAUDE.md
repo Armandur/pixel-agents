@@ -44,7 +44,7 @@ server/                              Lifecycle runtime + Fastify HTTP/WS server
     clientMessageHandler.ts          Single dispatch point for ClientMessage from webview
     server.ts                        Top-level composition
     idleSince.ts                     IdleSinceTracker: listens to the store's broadcasts, publishes agentIdleSince (turn end starts the clock, active/new tool stops it, adoption seeds from transcript mtime)
-    sessionNames.ts                  Polls HookProvider.sessionNames() onto agents, broadcasts agentSessionName on change
+    sessionNames.ts                  Polls HookProvider.sessionNames() onto agents, broadcasts agentSessionName on change (+ `crowned` for names in config `crownedSessions`)
     cli.ts                           npx pixel-agents entry (npm bin)
     sessionDirectoryName.ts          External session name = basename of the transcript's cwd (the project-dir hash is lossy: svky.se → "se"); repairs lossy names on restore
     fileStateAdapter.ts              Namespaced ~/.pixel-agents/ persistence
@@ -135,6 +135,7 @@ webview-ui/                          React 19 + Canvas UI (depends only on core/
       sprites/
         spriteData.ts                Pixel data (characters, furniture, tiles, bubbles)
         spriteCache.ts               SpriteData → offscreen canvas, per-zoom WeakMap
+        spriteAnchor.ts              getSpriteTopAnchor: a frame's top drawn row + centre (seats the crown on the head; DOM-free)
       editor/
         editorActions.ts             Pure layout ops
         editorState.ts               Imperative state (tools, ghost, selection, undo/redo + undo session, drag, placing)
