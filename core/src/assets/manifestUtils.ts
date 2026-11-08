@@ -39,6 +39,10 @@ export interface FurnitureManifest {
   canPlaceOnWalls: boolean;
   canPlaceOnSurfaces: boolean;
   backgroundTiles: number;
+  /** Which asset pack the item comes from ("retropi-office"); absent = bundled. */
+  pack?: string;
+  /** Free search tags ("kök", "fikarum"). */
+  tags?: string[];
   // If type is 'asset', these fields are present:
   type: 'asset' | 'group';
   file?: string;
@@ -63,6 +67,8 @@ export interface InheritedProps {
   state?: string;
   rotationScheme?: string;
   animationGroup?: string;
+  pack?: string;
+  tags?: string[];
 }
 
 export interface FurnitureAsset {
@@ -86,6 +92,8 @@ export interface FurnitureAsset {
   rotationScheme?: string;
   animationGroup?: string;
   frame?: number;
+  pack?: string;
+  tags?: string[];
 }
 
 /**
@@ -120,6 +128,8 @@ export function flattenManifest(node: ManifestNode, inherited: InheritedProps): 
         ...(inherited.rotationScheme ? { rotationScheme: inherited.rotationScheme } : {}),
         ...(inherited.animationGroup ? { animationGroup: inherited.animationGroup } : {}),
         ...(asset.frame !== undefined ? { frame: asset.frame } : {}),
+        ...(inherited.pack ? { pack: inherited.pack } : {}),
+        ...(inherited.tags?.length ? { tags: inherited.tags } : {}),
       },
     ];
   }

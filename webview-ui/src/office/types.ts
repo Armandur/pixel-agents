@@ -112,6 +112,10 @@ export interface FurnitureCatalogEntry {
   canPlaceOnWalls?: boolean;
   /** Whether this is a side-oriented asset that produces a mirrored "left" variant */
   mirrorSide?: boolean;
+  /** Asset pack the item comes from ("retropi-office"); absent = bundled. */
+  pack?: string;
+  /** Free search tags from the manifest. */
+  tags?: string[];
 }
 
 export interface PlacedFurniture {

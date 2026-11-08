@@ -56,6 +56,21 @@ export function mergeLoadedAssets(a: LoadedAssets, b: LoadedAssets): LoadedAsset
   };
 }
 
+/** A manifest's optional pack and tags, kept only when well-formed (they
+ *  come from hand-written or third-party manifests). */
+function packAndTags(manifest: { pack?: unknown; tags?: unknown }): {
+  pack?: string;
+  tags?: string[];
+} {
+  const out: { pack?: string; tags?: string[] } = {};
+  if (typeof manifest.pack === 'string' && manifest.pack) out.pack = manifest.pack;
+  if (Array.isArray(manifest.tags)) {
+    const tags = manifest.tags.filter((t): t is string => typeof t === 'string' && t !== '');
+    if (tags.length) out.tags = tags;
+  }
+  return out;
+}
+
 /**
  * Load furniture assets from per-folder manifests
  */
@@ -104,6 +119,7 @@ export async function loadFurnitureAssets(workspaceRoot: string): Promise<Loaded
           canPlaceOnWalls: manifest.canPlaceOnWalls,
           canPlaceOnSurfaces: manifest.canPlaceOnSurfaces,
           backgroundTiles: manifest.backgroundTiles,
+          ...packAndTags(manifest),
         };
 
         let assets: FurnitureAsset[];
@@ -126,6 +142,7 @@ export async function loadFurnitureAssets(workspaceRoot: string): Promise<Loaded
               canPlaceOnSurfaces: manifest.canPlaceOnSurfaces,
               backgroundTiles: manifest.backgroundTiles,
               groupId: manifest.id,
+              ...packAndTags(manifest),
             },
           ];
         } else {

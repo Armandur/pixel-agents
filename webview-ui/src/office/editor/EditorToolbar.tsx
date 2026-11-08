@@ -16,11 +16,14 @@ import {
 } from '../../constants.js';
 import { getColorizedSprite } from '../colorize.js';
 import { getColorizedFloorSprite, getFloorPatternCount, hasFloorSprites } from '../floorTiles.js';
+import type { PackFilter } from '../layout/catalogSearch.js';
+import { filterCatalog, listPacks } from '../layout/catalogSearch.js';
 import type { FurnitureCategory, LoadedAssetData } from '../layout/furnitureCatalog.js';
 import {
   buildDynamicCatalog,
   getActiveCategories,
   getCatalogByCategory,
+  getPaletteCatalog,
 } from '../layout/furnitureCatalog.js';
 import {
   getCarpetJunctionSprite,
@@ -32,6 +35,7 @@ import { getCachedSprite } from '../sprites/spriteCache.js';
 import type { AreaDefinition, CarpetTile, SpriteData, TileType as TileTypeVal } from '../types.js';
 import { EditTool } from '../types.js';
 import { getWallSetCount, getWallSetPreviewSprite } from '../wallTiles.js';
+import { FurnitureFilterRow } from './FurnitureFilterRow.js';
 
 /** Synthetic category id used to show the carpet sub-panel inside the Furniture tab. */
 const CARPET_CATEGORY_ID = '__carpet__' as const;
@@ -133,6 +137,8 @@ export function EditorToolbar({
   onAreaMappingChange,
 }: EditorToolbarProps) {
   const [activeCategory, setActiveCategory] = useState<FurniturePanelCategory>('desks');
+  const [furnitureQuery, setFurnitureQuery] = useState('');
+  const [furniturePack, setFurniturePack] = useState<PackFilter>('all');
   const [showColor, setShowColor] = useState(false);
   const [showWallColor, setShowWallColor] = useState(false);
   const [showFurnitureColor, setShowFurnitureColor] = useState(false);
@@ -166,8 +172,15 @@ export function EditorToolbar({
   // For selected furniture: use existing color or default
   const effectiveColor = selectedFurnitureColor ?? DEFAULT_FURNITURE_COLOR;
 
+  // A search spans every category; otherwise the active tab's items. Either
+  // way the pack picker narrows the result.
   const categoryItems =
-    activeCategory === CARPET_CATEGORY_ID ? [] : getCatalogByCategory(activeCategory);
+    activeCategory === CARPET_CATEGORY_ID
+      ? []
+      : filterCatalog(
+          furnitureQuery.trim() ? getPaletteCatalog() : getCatalogByCategory(activeCategory),
+          { query: furnitureQuery, pack: furniturePack },
+        );
 
   const patternCount = getFloorPatternCount();
   // Wall is TileType 0, floor patterns are 1..patternCount
@@ -478,6 +491,13 @@ export function EditorToolbar({
       {/* Sub-panel: Furniture — stacked bottom-to-top via column-reverse */}
       {isFurnitureActive && (
         <div className="flex flex-col-reverse gap-4">
+          <FurnitureFilterRow
+            query={furnitureQuery}
+            onQueryChange={setFurnitureQuery}
+            pack={furniturePack}
+            onPackChange={setFurniturePack}
+            packs={listPacks(getPaletteCatalog())}
+          />
           {/* Category tabs + contextual Copy button — just above tool row */}
           <div className="flex gap-4 flex-wrap items-center">
             {getActiveCategories().map((cat) => (

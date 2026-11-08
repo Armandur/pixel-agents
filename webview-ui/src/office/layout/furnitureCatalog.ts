@@ -20,6 +20,8 @@ export interface LoadedAssetData {
     rotationScheme?: string;
     animationGroup?: string;
     frame?: number;
+    pack?: string;
+    tags?: string[];
   }>;
   sprites: Record<string, SpriteData>;
 }
@@ -92,6 +94,8 @@ export function buildDynamicCatalog(assets: LoadedAssetData): boolean {
         ...(asset.backgroundTiles ? { backgroundTiles: asset.backgroundTiles } : {}),
         ...(asset.canPlaceOnWalls ? { canPlaceOnWalls: true } : {}),
         ...(asset.mirrorSide ? { mirrorSide: true } : {}),
+        ...(asset.pack ? { pack: asset.pack } : {}),
+        ...(asset.tags?.length ? { tags: asset.tags } : {}),
       };
     })
     .filter((e): e is CatalogEntryWithCategory => e !== null);
@@ -320,10 +324,10 @@ export function getCatalogByCategory(category: FurnitureCategory): CatalogEntryW
   return catalog.filter((e) => e.category === category);
 }
 
-/* Currently unused since the editor palette is organized by category. */
-// function getActiveCatalog(): CatalogEntryWithCategory[] {
-//   return dynamicCatalog ?? [];
-// }
+/** Every item the editor palette offers, across categories (search). */
+export function getPaletteCatalog(): CatalogEntryWithCategory[] {
+  return dynamicCatalog ?? [];
+}
 
 export function getActiveCategories(): Array<{ id: FurnitureCategory; label: string }> {
   const categories = dynamicCategories ?? [];

@@ -1592,6 +1592,14 @@ components:
           type: string
         mirrorSide:
           type: boolean
+        pack:
+          type: string
+          description: Asset pack the item comes from (e.g. "retropi-office"); absent = bundled.
+        tags:
+          type: array
+          items:
+            type: string
+          description: Free search tags from the manifest.
         rotationScheme:
           type: string
         animationGroup:
