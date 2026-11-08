@@ -19,6 +19,11 @@ import {
   CARPET_DEFAULT_COLOR,
   CHARACTER_SITTING_OFFSET_PX,
   CHARACTER_Z_SORT_OFFSET,
+  CODEX_BADGE_BORDER,
+  CODEX_BADGE_FILL,
+  CODEX_BADGE_INSET_X_PX,
+  CODEX_BADGE_INSET_Y_PX,
+  CODEX_BADGE_SIZE_PX,
   DELETE_BUTTON_BG,
   FALLBACK_FLOOR_COLOR,
   GHOST_BORDER_HOVER_FILL,
@@ -451,6 +456,25 @@ export function renderScene(
         c.restore();
       },
     });
+
+    // Codex agents wear a small badge so they read apart from Claude ones at a glance.
+    if (ch.providerId === 'codex') {
+      const size = CODEX_BADGE_SIZE_PX * zoom;
+      const bx = drawX + cached.width - (CODEX_BADGE_INSET_X_PX + CODEX_BADGE_SIZE_PX) * zoom;
+      const by = drawY + cached.height - (CODEX_BADGE_INSET_Y_PX + CODEX_BADGE_SIZE_PX) * zoom;
+      drawables.push({
+        zY: charZY + OUTLINE_Z_SORT_OFFSET, // just in front of its own character
+        draw: (c) => {
+          c.save();
+          c.globalAlpha = alpha;
+          c.fillStyle = CODEX_BADGE_BORDER;
+          c.fillRect(bx, by, size, size);
+          c.fillStyle = CODEX_BADGE_FILL;
+          c.fillRect(bx + zoom, by + zoom, size - 2 * zoom, size - 2 * zoom);
+          c.restore();
+        },
+      });
+    }
   }
 
   // ── Pets ──────────────────────────────────────────────

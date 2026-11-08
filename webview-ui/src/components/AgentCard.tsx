@@ -1,3 +1,4 @@
+import { CODEX_BADGE_BORDER, CODEX_BADGE_FILL } from '../constants.js';
 import type { CardVariant } from './cardBar.js';
 import { CharacterMugShot } from './CharacterMugShot.js';
 import { Button } from './ui/Button.js';
@@ -6,6 +7,8 @@ import { Button } from './ui/Button.js';
 export interface AgentAppearance {
   palette: number;
   hueShift: number;
+  /** Hook provider ('codex' gets a badge). Undefined means claude. */
+  providerId?: string;
 }
 
 /** Agent activity reflected by the tab's status dot. */
@@ -56,9 +59,18 @@ export function AgentCard({
     <div
       className={`pointer-events-auto flex items-stretch gap-1 p-1 cursor-pointer border-2 shrink-0 ${CARD_VARIANT[variant]}`}
       onClick={() => onSelect(agentId)}
-      title={`Agent ${agentId}`}
+      title={appearance.providerId === 'codex' ? `Agent ${agentId} (Codex)` : `Agent ${agentId}`}
     >
-      <CharacterMugShot palette={appearance.palette} hueShift={appearance.hueShift} />
+      <div className="relative shrink-0">
+        <CharacterMugShot palette={appearance.palette} hueShift={appearance.hueShift} />
+        {appearance.providerId === 'codex' && (
+          <span
+            className="absolute bottom-0 left-0 size-6 border-2"
+            style={{ background: CODEX_BADGE_FILL, borderColor: CODEX_BADGE_BORDER }}
+            aria-label="Codex"
+          />
+        )}
+      </div>
       {/* Close on top, status dot at the bottom, both centred over the
           same column beside the mug shot. */}
       <div className="flex flex-col items-center justify-between shrink-0">

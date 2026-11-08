@@ -1115,6 +1115,13 @@ export class OfficeState {
     ch.isHeadless = headless;
   }
 
+  /** Record which hook provider the agent comes from (drives the Codex badge). */
+  setProvider(id: number, providerId: string | undefined): void {
+    const ch = this.characters.get(id);
+    if (!ch) return;
+    ch.providerId = providerId;
+  }
+
   setAgentContext(id: number, contextTokens: number, maxContextTokens: number): void {
     const ch = this.characters.get(id);
     if (!ch) return;

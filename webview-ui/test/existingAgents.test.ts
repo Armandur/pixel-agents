@@ -38,15 +38,19 @@ interface AddAgentCall {
 
 /** A fake office that records addAgent calls, mirroring how officeCanvasCursor
  *  tests inject closures instead of constructing a real OfficeState. */
-function fakeOffice(
-  existing: number[] = [],
-): ExistingAgentsOffice & { calls: AddAgentCall[]; headless: number[] } {
+function fakeOffice(existing: number[] = []): ExistingAgentsOffice & {
+  calls: AddAgentCall[];
+  headless: number[];
+  providers: Record<number, string | undefined>;
+} {
   const ids = new Set(existing);
   const calls: AddAgentCall[] = [];
   const headless: number[] = [];
+  const providers: Record<number, string | undefined> = {};
   return {
     calls,
     headless,
+    providers,
     characters: { has: (id: number) => ids.has(id) },
     addAgent: (id, palette, hueShift, seatId, skipSpawnEffect, directoryName) => {
       ids.add(id);
@@ -54,6 +58,9 @@ function fakeOffice(
     },
     setHeadless: (id, isHeadless) => {
       if (isHeadless) headless.push(id);
+    },
+    setProvider: (id, providerId) => {
+      providers[id] = providerId;
     },
   };
 }
@@ -183,4 +190,16 @@ test('layout ready: agent with no metadata is still added with undefined fields'
       directoryName: undefined,
     },
   ]);
+});
+
+// ── provider id (Codex badge) ───────────────────────────────────
+
+test('provider ids reach characters added now and agents buffered for later', () => {
+  const os = fakeOffice();
+  reconcileExistingAgents(os, [1, 2], {}, {}, true, [], {}, { 2: 'codex' });
+  assert.deepEqual(os.providers, { 2: 'codex' }, 'claude agents get no provider call');
+
+  const pending: PendingAgent[] = [];
+  reconcileExistingAgents(fakeOffice(), [3], {}, {}, false, pending, {}, { 3: 'codex' });
+  assert.equal(pending[0]?.providerId, 'codex');
 });

@@ -43,6 +43,15 @@ export const SELECTED_OUTLINE_ALPHA = 1.0;
 export const HOVERED_OUTLINE_ALPHA = 0.5;
 /** Headless agents (adopted, no terminal to focus) render slightly translucent. */
 export const HEADLESS_CHARACTER_ALPHA = 0.5;
+
+// ── Provider badge (Codex characters) ───────────────────────
+/** Badge fill/border, drawn at the character's hip so Codex agents stand out from Claude ones. */
+export const CODEX_BADGE_FILL = '#10a37f';
+export const CODEX_BADGE_BORDER = '#0b3d30';
+/** Badge size and offset from the sprite's bottom-right corner, in sprite pixels. */
+export const CODEX_BADGE_SIZE_PX = 4;
+export const CODEX_BADGE_INSET_X_PX = 3;
+export const CODEX_BADGE_INSET_Y_PX = 9;
 export const GHOST_PREVIEW_SPRITE_ALPHA = 0.5;
 export const GHOST_PREVIEW_TINT_ALPHA = 0.25;
 export const SELECTION_DASH_PATTERN: [number, number] = [4, 3];

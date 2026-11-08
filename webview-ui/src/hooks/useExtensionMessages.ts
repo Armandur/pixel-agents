@@ -332,6 +332,7 @@ export function useExtensionMessages(
         for (const p of pendingAgents) {
           os.addAgent(p.id, p.palette, p.hueShift, p.seatId, true, p.directoryName);
           if (p.isHeadless) os.setHeadless(p.id, true);
+          if (p.providerId) os.setProvider(p.id, p.providerId);
         }
         pendingAgents = [];
         layoutReadyRef.current = true;
@@ -386,6 +387,7 @@ export function useExtensionMessages(
           if (isHeadlessAgent(msg.isExternal as boolean | undefined)) {
             os.setHeadless(id, true);
           }
+          os.setProvider(id, msg.providerId as string | undefined);
         }
         saveAgentSeats(os);
       } else if (msg.type === 'agentClosed') {
@@ -411,6 +413,7 @@ export function useExtensionMessages(
         const meta = (msg.agentMeta || {}) as Record<number, ExistingAgentMeta>;
         const directoryNames = (msg.directoryNames || {}) as Record<number, string>;
         const externalAgents = (msg.externalAgents || {}) as Record<number, boolean>;
+        const providerIds = (msg.providerIds || {}) as Record<number, string>;
         const headlessAgents: Record<number, boolean> = {};
         for (const id of incoming) {
           noteDirectoryName(directoryNames[id]);
@@ -429,6 +432,7 @@ export function useExtensionMessages(
             layoutReadyRef.current,
             pendingAgents,
             headlessAgents,
+            providerIds,
           )
         ) {
           saveAgentSeats(os);
