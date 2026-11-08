@@ -23,6 +23,7 @@ import type {
   SelectionRenderState,
 } from '../engine/renderer.js';
 import { renderFrame } from '../engine/renderer.js';
+import { isAutoTile } from '../layout/autoTile.js';
 import { EditTool, TILE_SIZE } from '../types.js';
 import { computeNormalModeCursor } from './officeCanvasCursor.js';
 import { useCanvasTouchGestures } from './useCanvasTouchGestures.js';
@@ -345,7 +346,9 @@ export function OfficeCanvas({
               editorState.activeTool === EditTool.WALL_PAINT ||
               editorState.activeTool === EditTool.ERASE ||
               editorState.activeTool === EditTool.CARPET_PAINT ||
-              editorState.activeTool === EditTool.AREA_PAINT) &&
+              editorState.activeTool === EditTool.AREA_PAINT ||
+              (editorState.activeTool === EditTool.FURNITURE_PLACE &&
+                isAutoTile(editorState.placing?.type))) &&
             !editorState.dragUid
           ) {
             onEditorTileAction(tile.col, tile.row);

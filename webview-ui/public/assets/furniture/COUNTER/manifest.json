@@ -1,0 +1,11 @@
+{
+  "id": "COUNTER",
+  "name": "Counter",
+  "category": "desks",
+  "type": "autotile",
+  "file": "COUNTER.png",
+  "canPlaceOnWalls": false,
+  "canPlaceOnSurfaces": false,
+  "backgroundTiles": 0,
+  "tags": ["disk", "bänk", "counter"]
+}

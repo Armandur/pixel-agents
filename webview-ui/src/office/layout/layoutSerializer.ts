@@ -8,6 +8,7 @@ import type {
   TileType as TileTypeVal,
 } from '../types.js';
 import { DEFAULT_COLS, DEFAULT_ROWS, Direction, TILE_SIZE, TileType } from '../types.js';
+import { autoTileIndex, autoTileMask, autoTilePiece } from './autoTile.js';
 import { getCatalogEntry, getOrientationInGroup } from './furnitureCatalog.js';
 
 /** Convert flat tile array from layout into 2D grid */
@@ -40,6 +41,7 @@ export function layoutToFurnitureInstances(furniture: PlacedFurniture[]): Furnit
     }
   }
 
+  const autoTiles = autoTileIndex(furniture);
   const instances: FurnitureInstance[] = [];
   for (const item of furniture) {
     const entry = getCatalogEntry(item.type);
@@ -74,13 +76,18 @@ export function layoutToFurnitureInstances(furniture: PlacedFurniture[]): Furnit
       }
     }
 
+    // Auto-tiled items draw the piece their same-type neighbours select
+    const tiles = autoTiles.get(item.type);
+    const mask = tiles ? autoTileMask(tiles, item.col, item.row) : -1;
+    const base = (tiles && autoTilePiece(item.type, mask)) || entry.sprite;
+
     // Colorize sprite if this furniture has a color override
-    let sprite = entry.sprite;
+    let sprite = base;
     if (item.color) {
       const { h, s, b: bv, c: cv } = item.color;
       sprite = getColorizedSprite(
-        `furn-${item.type}-${h}-${s}-${bv}-${cv}-${item.color.colorize ? 1 : 0}`,
-        entry.sprite,
+        `furn-${item.type}${tiles ? `#${mask}` : ''}-${h}-${s}-${bv}-${cv}-${item.color.colorize ? 1 : 0}`,
+        base,
         item.color,
       );
     }

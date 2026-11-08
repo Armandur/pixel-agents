@@ -276,6 +276,7 @@ export interface FurnitureAssetMessage {
   mirrorSide?: boolean;
   pack?: string;
   tags?: string[];
+  autoTile?: boolean;
   rotationScheme?: string;
   animationGroup?: string;
   frame?: number;

@@ -46,6 +46,9 @@ export class EditorState {
   // Tracks toggle direction during wall drag (true=adding walls, false=removing, null=undecided)
   wallDragAdding: boolean | null = null;
 
+  // Same for an auto-tile (counter) stroke with the furniture tool
+  autoTileDragAdding: boolean | null = null;
+
   /**
    * Palette-wide colour for new furniture: set from the Furniture tab's Color
    * sliders, tints every catalog thumbnail, and applies to whatever is placed.
@@ -133,6 +136,7 @@ export class EditorState {
     this.carpetDragErasing = null;
     this.areaDragErasing = null;
     this.wallDragAdding = null;
+    this.autoTileDragAdding = null;
   }
 
   pushUndo(layout: OfficeLayout): void {

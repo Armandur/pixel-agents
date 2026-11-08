@@ -1,4 +1,5 @@
 import type { FurnitureCatalogEntry, SpriteData } from '../types.js';
+import { clearAutoTilePieces, setAutoTilePieces } from './autoTile.js';
 
 export interface LoadedAssetData {
   catalog: Array<{
@@ -22,6 +23,7 @@ export interface LoadedAssetData {
     frame?: number;
     pack?: string;
     tags?: string[];
+    autoTile?: boolean;
   }>;
   sprites: Record<string, SpriteData>;
 }
@@ -96,6 +98,7 @@ export function buildDynamicCatalog(assets: LoadedAssetData): boolean {
         ...(asset.mirrorSide ? { mirrorSide: true } : {}),
         ...(asset.pack ? { pack: asset.pack } : {}),
         ...(asset.tags?.length ? { tags: asset.tags } : {}),
+        ...(asset.autoTile ? { autoTile: true } : {}),
       };
     })
     .filter((e): e is CatalogEntryWithCategory => e !== null);
@@ -117,6 +120,14 @@ export function buildDynamicCatalog(assets: LoadedAssetData): boolean {
   }
 
   if (allEntries.length === 0) return false;
+
+  // Auto-tile pieces arrive as extra sprites `${id}#${mask}`
+  clearAutoTilePieces();
+  for (const asset of assets.catalog) {
+    if (!asset.autoTile) continue;
+    const set = Array.from({ length: 16 }, (_, m) => assets.sprites[`${asset.id}#${m}`]);
+    if (set.every(Boolean)) setAutoTilePieces(asset.id, set);
+  }
 
   // Build rotation groups from groupId + orientation metadata
   rotationGroups.clear();

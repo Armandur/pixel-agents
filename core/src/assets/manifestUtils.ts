@@ -44,7 +44,9 @@ export interface FurnitureManifest {
   /** Free search tags ("kök", "fikarum"). */
   tags?: string[];
   // If type is 'asset', these fields are present:
-  type: 'asset' | 'group';
+  /** 'autotile': `file` is a 4x4 sheet of 16x16 pieces, piece index = neighbour
+   *  mask (N=1, E=2, S=4, W=8, row-major), placed as 1x1 items that join up. */
+  type: 'asset' | 'group' | 'autotile';
   file?: string;
   width?: number;
   height?: number;
@@ -94,6 +96,21 @@ export interface FurnitureAsset {
   frame?: number;
   pack?: string;
   tags?: string[];
+  /** Joins with same-type neighbours; sprites `${id}#${mask}` carry the pieces. */
+  autoTile?: boolean;
+}
+
+/** Side of one auto-tile piece in pixels; the sheet is 4x4 pieces. */
+export const AUTO_TILE_PIECE_PX = 16;
+
+/** Cut an auto-tile sheet into its 16 pieces, index = neighbour mask. */
+export function sliceAutoTileSheet(sheet: string[][]): string[][][] {
+  const n = AUTO_TILE_PIECE_PX;
+  return Array.from({ length: 16 }, (_, mask) => {
+    const r = Math.floor(mask / 4) * n;
+    const c = (mask % 4) * n;
+    return sheet.slice(r, r + n).map((row) => row.slice(c, c + n));
+  });
 }
 
 /**

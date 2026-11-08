@@ -9,6 +9,7 @@ import {
   ZOOM_MAX,
   ZOOM_MIN,
 } from '../constants.js';
+import { autoTileStrokeAdds, autoTileStrokeTile } from '../office/editor/autoTileStroke.js';
 import type { ExpandDirection } from '../office/editor/editorActions.js';
 import {
   addArea,
@@ -37,6 +38,7 @@ import {
 } from '../office/editor/editorActions.js';
 import type { EditorState } from '../office/editor/editorState.js';
 import type { OfficeState } from '../office/engine/officeState.js';
+import { isAutoTile } from '../office/layout/autoTile.js';
 import { getRotatedType, getToggledType } from '../office/layout/furnitureCatalog.js';
 import type {
   EditTool as EditToolType,
@@ -670,6 +672,22 @@ export function useEditorActions(
         case EditTool.FURNITURE_PLACE: {
           const placing = editorState.placing;
           if (!placing) return;
+          if (isAutoTile(placing.type)) {
+            // A counter is painted: the first tile decides add or remove,
+            // and the whole drag is one undo entry.
+            editorState.autoTileDragAdding ??= autoTileStrokeAdds(layout, placing.type, col, row);
+            applyStrokeEdit(
+              autoTileStrokeTile(
+                layout,
+                placing.type,
+                col,
+                row,
+                editorState.autoTileDragAdding,
+                editorState.placementColor(),
+              ),
+            );
+            return;
+          }
           applyEdit(
             placeNewFurniture(layout, placing.type, col, row, editorState.placementColor()),
           );

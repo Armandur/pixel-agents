@@ -1600,6 +1600,9 @@ components:
           items:
             type: string
           description: Free search tags from the manifest.
+        autoTile:
+          type: boolean
+          description: A 1x1 item that joins with same-type neighbours; its pieces arrive as sprites `<id>#<mask>` (N=1, E=2, S=4, W=8).
         rotationScheme:
           type: string
         animationGroup:

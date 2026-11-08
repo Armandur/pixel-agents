@@ -21,7 +21,11 @@ import type {
   InheritedProps,
   ManifestGroup,
 } from '../../core/src/assets/manifestUtils.js';
-import { flattenManifest } from '../../core/src/assets/manifestUtils.js';
+import {
+  AUTO_TILE_PIECE_PX,
+  flattenManifest,
+  sliceAutoTileSheet,
+} from '../../core/src/assets/manifestUtils.js';
 import {
   decodeCharacterPng,
   decodeFloorPng,
@@ -69,6 +73,45 @@ function packAndTags(manifest: { pack?: unknown; tags?: unknown }): {
     if (tags.length) out.tags = tags;
   }
   return out;
+}
+
+/** An auto-tile manifest: one 1x1 catalog entry, plus its 16 pieces as
+ *  sprites `${id}#${mask}` (the entry's own sprite is the lone piece, mask 0). */
+function loadAutoTile(
+  itemDir: string,
+  manifest: FurnitureManifest,
+): { asset: FurnitureAsset; sprites: Map<string, string[][]> } | null {
+  const file = manifest.file ?? `${manifest.id}.png`;
+  const sheetPath = path.resolve(itemDir, file);
+  if (!sheetPath.startsWith(path.resolve(itemDir) + path.sep) || !fs.existsSync(sheetPath)) {
+    console.warn(`  ⚠️  Auto-tile sheet missing or outside its folder: ${file}`);
+    return null;
+  }
+  const side = AUTO_TILE_PIECE_PX * 4;
+  const pieces = sliceAutoTileSheet(pngToSpriteData(fs.readFileSync(sheetPath), side, side));
+  const sprites = new Map<string, string[][]>([[manifest.id, pieces[0]]]);
+  pieces.forEach((piece, mask) => sprites.set(`${manifest.id}#${mask}`, piece));
+  return {
+    asset: {
+      id: manifest.id,
+      name: manifest.name,
+      label: manifest.name,
+      category: manifest.category,
+      file,
+      width: AUTO_TILE_PIECE_PX,
+      height: AUTO_TILE_PIECE_PX,
+      footprintW: 1,
+      footprintH: 1,
+      isDesk: manifest.category === 'desks',
+      canPlaceOnWalls: false,
+      canPlaceOnSurfaces: false,
+      backgroundTiles: 0,
+      groupId: manifest.id,
+      autoTile: true,
+      ...packAndTags(manifest),
+    },
+    sprites,
+  };
 }
 
 /**
@@ -121,6 +164,15 @@ export async function loadFurnitureAssets(workspaceRoot: string): Promise<Loaded
           backgroundTiles: manifest.backgroundTiles,
           ...packAndTags(manifest),
         };
+
+        if (manifest.type === 'autotile') {
+          const auto = loadAutoTile(itemDir, manifest);
+          if (auto) {
+            catalog.push(auto.asset);
+            for (const [id, sprite] of auto.sprites) sprites.set(id, sprite);
+          }
+          continue;
+        }
 
         let assets: FurnitureAsset[];
 

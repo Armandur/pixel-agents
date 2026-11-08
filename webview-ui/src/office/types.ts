@@ -116,6 +116,8 @@ export interface FurnitureCatalogEntry {
   pack?: string;
   /** Free search tags from the manifest. */
   tags?: string[];
+  /** Painted as joined 1x1 tiles (see office/layout/autoTile.ts). */
+  autoTile?: boolean;
 }
 
 export interface PlacedFurniture {
