@@ -167,10 +167,14 @@ export function updateCharacter(
       // If became active, pathfind to seat
       if (ch.isActive) {
         if (!ch.seatId) {
-          // No seat assigned — type in place
-          ch.state = CharacterState.TYPE;
-          ch.frame = 0;
-          ch.frameTimer = 0;
+          // No seat assigned — type in place. A sub-agent stands instead: it
+          // only lacks a seat when the office is full, and the sitting pose
+          // on bare floor looked like sitting in mid-air.
+          if (!ch.isSubagent) {
+            ch.state = CharacterState.TYPE;
+            ch.frame = 0;
+            ch.frameTimer = 0;
+          }
           break;
         }
         const seat = seats.get(ch.seatId);
@@ -263,8 +267,8 @@ export function updateCharacter(
 
         if (ch.isActive) {
           if (!ch.seatId) {
-            // No seat — type in place
-            ch.state = CharacterState.TYPE;
+            // No seat — type in place (a seatless sub-agent stands, see IDLE)
+            ch.state = ch.isSubagent ? CharacterState.IDLE : CharacterState.TYPE;
           } else {
             const seat = seats.get(ch.seatId);
             if (seat && ch.tileCol === seat.seatCol && ch.tileRow === seat.seatRow) {

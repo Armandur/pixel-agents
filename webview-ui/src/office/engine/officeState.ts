@@ -773,12 +773,38 @@ export class OfficeState {
     if (parentCh) ch.dir = parentCh.dir;
     ch.isSubagent = true;
     ch.parentAgentId = parentAgentId;
+    // Standing, not the character default TYPE: TYPE on the spawn tile is the
+    // sitting pose on bare floor, and an active TYPE never stands up again.
+    ch.state = CharacterState.IDLE;
+    // It works at a free computer near its parent (it walks there from the
+    // spawn tile); freed again when it is removed.
+    const seatId = this.subagentSeat(parentCh);
+    if (seatId) {
+      this.seats.get(seatId)!.assigned = true;
+      ch.seatId = seatId;
+    }
     startMatrixEffect(ch, 'spawn');
     this.characters.set(id, ch);
 
     this.subagentIdMap.set(key, id);
     this.subagentMeta.set(id, { parentAgentId, parentToolId });
     return id;
+  }
+
+  /** The free seat a new sub-agent takes: the closest one facing a computer,
+   *  measured from its parent's seat (or tile); else the closest free seat of
+   *  any kind; null when the office is full. */
+  private subagentSeat(parent: Character | undefined): string | null {
+    const anchor = anchorTile(parent, this.seats) ?? { col: 0, row: 0 };
+    const electronics = this.buildElectronicsTileSet();
+    const free = new Map([...this.seats].filter(([, s]) => !s.assigned));
+    const atComputer = new Map(
+      [...free].filter(([, s]) => this.isSeatFacingElectronics(s, electronics)),
+    );
+    return (
+      closestFreeSeat(atComputer, anchor.col, anchor.row) ??
+      closestFreeSeat(free, anchor.col, anchor.row)
+    );
   }
 
   /** Remove a specific sub-agent character and free its seat */
