@@ -1,7 +1,6 @@
 import { pickDiversePalette } from '../../../../core/src/paletteUtils.js';
 import {
   AUTO_ON_FACING_DEPTH,
-  AUTO_ON_SIDE_DEPTH,
   CHARACTER_HIT_HALF_WIDTH,
   CHARACTER_HIT_HEIGHT,
   CHARACTER_SITTING_OFFSET_PX,
@@ -39,6 +38,7 @@ import type {
   TileType as TileTypeVal,
 } from '../types.js';
 import { CharacterState, Direction, PetState, TILE_SIZE } from '../types.js';
+import { collectAutoOnTiles } from './autoState.js';
 import { createCharacter, updateCharacter, walkFrame } from './characters.js';
 import type { VisitRequest } from './conversation.js';
 import { advanceVisit, beginVisit, requestVisit, visitDestination } from './conversation.js';
@@ -623,6 +623,7 @@ export class OfficeState {
     // Start despawn animation instead of immediate delete
     startMatrixEffect(ch, 'despawn');
     ch.bubbleType = null;
+    this.rebuildFurnitureInstances(); // its screen goes dark with it
   }
 
   /** Find seat uid at a given tile position, or null */
@@ -864,37 +865,10 @@ export class OfficeState {
 
   /** Rebuild furniture instances with auto-state applied (active agents turn electronics ON) */
   private rebuildFurnitureInstances(): void {
-    // Collect tiles where active agents face desks
-    const autoOnTiles = new Set<string>();
-    for (const ch of this.characters.values()) {
-      if (!ch.isActive || !ch.seatId) continue;
-      const seat = this.seats.get(ch.seatId);
-      if (!seat) continue;
-      // Find the desk tile(s) the agent faces from their seat
-      const dCol =
-        seat.facingDir === Direction.RIGHT ? 1 : seat.facingDir === Direction.LEFT ? -1 : 0;
-      const dRow = seat.facingDir === Direction.DOWN ? 1 : seat.facingDir === Direction.UP ? -1 : 0;
-      // Check tiles in the facing direction (desk could be 1-3 tiles deep)
-      for (let d = 1; d <= AUTO_ON_FACING_DEPTH; d++) {
-        const tileCol = seat.seatCol + dCol * d;
-        const tileRow = seat.seatRow + dRow * d;
-        autoOnTiles.add(`${tileCol},${tileRow}`);
-      }
-      // Also check tiles to the sides of the facing direction (desks can be wide)
-      for (let d = 1; d <= AUTO_ON_SIDE_DEPTH; d++) {
-        const baseCol = seat.seatCol + dCol * d;
-        const baseRow = seat.seatRow + dRow * d;
-        if (dCol !== 0) {
-          // Facing left/right: check tiles above and below
-          autoOnTiles.add(`${baseCol},${baseRow - 1}`);
-          autoOnTiles.add(`${baseCol},${baseRow + 1}`);
-        } else {
-          // Facing up/down: check tiles left and right
-          autoOnTiles.add(`${baseCol - 1},${baseRow}`);
-          autoOnTiles.add(`${baseCol + 1},${baseRow}`);
-        }
-      }
-    }
+    // Electronics turn ON only in front of an agent working at its desk
+    const autoOnTiles = collectAutoOnTiles(this.characters.values(), this.seats, (id) =>
+      this.idleSinceById.has(id),
+    );
 
     if (autoOnTiles.size === 0) {
       this.furniture = layoutToFurnitureInstances(this.layout.furniture);
@@ -1225,6 +1199,7 @@ export class OfficeState {
   setAgentIdleSince(id: number, since: number | undefined): void {
     if (since === undefined) this.idleSinceById.delete(id);
     else this.idleSinceById.set(id, since);
+    this.rebuildFurnitureInstances();
   }
 
   private loungeKeys(): Set<string> {

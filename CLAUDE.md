@@ -148,6 +148,7 @@ webview-ui/                          React 19 + Canvas UI (depends only on core/
       engine/
         characters.ts                Character FSM (idle/walk/type) + wander AI; stepAlongPath (one frame of walking) + walkFrame (with the walk animation, for walks outside the FSM)
         conversation.ts              Agent-to-agent visits (pure): requestVisit queue, visitDestination (aim at where the recipient is GOING — path end, else its seat while active, but where it stands while it is on its own visit; answering the agent visiting you = stay put — re-aimed at tile boundaries; talk starts only beside the recipient, re-aim at its live tile after CONVERSATION_WAIT_SEC), beginVisit, advanceVisit (going → talking → done; the recipient is held still only while talking), facingToward
+        autoState.ts                 isWorkingAtDesk + collectAutoOnTiles: which screens are on (pure)
         lounge.ts                    The lounge (pure): agents idle >= LOUNGE_IDLE_SEC (from agentIdleSince; waiting-for-input/approval excluded) leave their desk for an Area with `role: 'lounge'` and sit (free, unassigned lounge seat; temporary claim), stroll or mingle there; turning active ends it and the FSM walks them home. planLoungeActivity takes a LoungeContext from OfficeState
         officeState.ts               Game world (layout, characters, seats, selection, subagents, consent greeter)
         gameLoop.ts                  rAF loop with delta-time cap (0.1 s)
@@ -470,7 +471,7 @@ Toggle via "Layout" button. Tools: SELECT (default), Floor paint, Wall paint, Er
 
 **State groups**: Items with `state: "on"` / `"off"` sharing the same `groupId` + `orientation` form toggle pairs. `stateGroups` Map enables `getToggledType()` lookup. Editor palette hides on-state variants. State groups are mirrored across orientations.
 
-**Auto-state**: `officeState.rebuildFurnitureInstances()` swaps electronics to ON sprites when an active agent faces a desk with that item nearby (3 tiles deep in facing direction, 1 tile to each side). Operates at render time without modifying the saved layout.
+**Auto-state**: `officeState.rebuildFurnitureInstances()` swaps electronics to ON sprites in front of an agent WORKING AT ITS DESK (`office/engine/autoState.ts` `isWorkingAtDesk`: active, not idle per the server's agentIdleSince, sitting — TYPE — on its own seat tile, not visiting, lounging or despawning), with that item nearby (3 tiles deep in facing direction, 1 tile to each side). `isActive` alone is not enough: an adopted agent keeps the character default `true` while idle. Operates at render time without modifying the saved layout.
 
 **Background tiles**: `backgroundTiles?: number` — top N footprint rows allow other furniture to be placed on them AND characters to walk through. Z-sort places bg-row items behind the host furniture.
 
