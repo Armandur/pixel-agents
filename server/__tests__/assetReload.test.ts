@@ -39,6 +39,7 @@ import {
   loadAllCharacters,
   loadAllFurniture,
   loadAllPets,
+  loadAllWalls,
 } from '../src/assetReload.js';
 
 beforeEach(() => {
@@ -111,5 +112,10 @@ describe('assetReload helpers', () => {
     expect(cache.furniture?.catalog).toEqual([{ id: 'furn:dist' }, { id: 'furn:ext' }]);
     // Floor/wall/carpet are bundled-only: loaded from dist, never from the external dir.
     expect(vi.mocked(assetLoader.loadFloorTiles).mock.calls.map((c) => c[0])).toEqual(['dist']);
+  });
+
+  it('loadAllWalls keeps the bundled sets first and appends each external directory in order', async () => {
+    const result = await loadAllWalls('root', ['e1', 'e2']);
+    expect(result?.sets).toEqual([['wall:root'], ['wall:e1'], ['wall:e2']]);
   });
 });

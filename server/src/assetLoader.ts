@@ -253,7 +253,7 @@ export function loadDefaultLayout(assetsRoot: string): Record<string, unknown> |
 
 // ── Wall tile loading ────────────────────────────────────────
 
-interface LoadedWallTiles {
+export interface LoadedWallTiles {
   /** Array of wall sets, each containing 16 sprites indexed by bitmask (N=1,E=2,S=4,W=8) */
   sets: string[][][][];
 }

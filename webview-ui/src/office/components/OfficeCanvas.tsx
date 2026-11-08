@@ -216,6 +216,7 @@ export function OfficeCanvas({
           showAreas,
           activeAreaLabel,
           officeState.pets,
+          layout.wallSetTiles,
         );
         offsetRef.current = { x: offsetX, y: offsetY };
 

@@ -1,4 +1,9 @@
-import type { LoadedAssets, LoadedCharacterSprites, LoadedPetSprites } from './assetLoader.js';
+import type {
+  LoadedAssets,
+  LoadedCharacterSprites,
+  LoadedPetSprites,
+  LoadedWallTiles,
+} from './assetLoader.js';
 import {
   loadCarpetTiles,
   loadCharacterSprites,
@@ -76,9 +81,26 @@ export async function loadAllPets(
 }
 
 /**
+ * Wall sets: the bundled wall_N.png sets first (so set 0 stays the bundled
+ * wall every existing layout uses), then each external directory's
+ * assets/walls/wall_N.png, appended in config order.
+ */
+export async function loadAllWalls(
+  assetsRoot: string,
+  externalDirs: string[],
+): Promise<LoadedWallTiles | null> {
+  let walls = await loadWallTiles(assetsRoot);
+  for (const extraDir of externalDirs) {
+    const extra = await loadWallTiles(extraDir);
+    if (extra) walls = walls ? { sets: [...walls.sets, ...extra.sets] } : extra;
+  }
+  return walls;
+}
+
+/**
  * Build the full in-memory asset cache for the standalone server. External
- * directories contribute characters, pets, and furniture; floor/wall/carpet
- * tiles are bundled-only. Reproduces the wrap/unwrap shape `AssetCache` expects:
+ * directories contribute characters, pets, furniture and wall sets; floor and
+ * carpet tiles are bundled-only. Reproduces the wrap/unwrap shape `AssetCache` expects:
  * characters/pets/furniture are wrapper objects, while floor/wall/carpet are the
  * unwrapped sprite arrays.
  */
@@ -90,7 +112,7 @@ export async function buildAssetCache(
     characters: await loadAllCharacters(distRoot, externalDirs),
     pets: await loadAllPets(distRoot, externalDirs),
     floorTiles: await loadFloorTiles(distRoot).then((t) => t?.sprites ?? null),
-    wallTiles: await loadWallTiles(distRoot).then((t) => t?.sets ?? null),
+    wallTiles: await loadAllWalls(distRoot, externalDirs).then((t) => t?.sets ?? null),
     carpetTiles: await loadCarpetTiles(distRoot).then((t) => t?.sets ?? null),
     furniture: await loadAllFurniture(distRoot, externalDirs),
     defaultLayout: loadDefaultLayout(distRoot),

@@ -547,10 +547,25 @@ export function wallStrokeTile(
   adding: boolean,
   wallColor: ColorValue,
   floor: { type: TileTypeVal; color: ColorValue },
+  wallSet = 0,
 ): OfficeLayout {
-  if (adding) return paintTile(layout, col, row, TileType.WALL, wallColor);
+  if (adding)
+    return setWallSet(paintTile(layout, col, row, TileType.WALL, wallColor), col, row, wallSet);
   if (layout.tiles[row * layout.cols + col] !== TileType.WALL) return layout;
   return paintTile(layout, col, row, floor.type, floor.color);
+}
+
+/** Record which wall set a wall tile uses. Set 0 on a layout without the
+ *  array leaves it absent, so layouts that never use another set don't grow one. */
+function setWallSet(layout: OfficeLayout, col: number, row: number, wallSet: number): OfficeLayout {
+  const idx = row * layout.cols + col;
+  const current = layout.wallSetTiles?.[idx] ?? 0;
+  if (current === wallSet) return layout;
+  const wallSetTiles = layout.wallSetTiles
+    ? [...layout.wallSetTiles]
+    : new Array<number | null>(layout.tiles.length).fill(null);
+  wallSetTiles[idx] = wallSet === 0 ? null : wallSet;
+  return { ...layout, wallSetTiles };
 }
 
 /** Recolour every wall tile. Returns new layout (immutable); unchanged when there are no walls. */
@@ -745,7 +760,7 @@ export function expandLayout(
   layout: OfficeLayout,
   direction: ExpandDirection,
 ): { layout: OfficeLayout; shift: { col: number; row: number } } | null {
-  const { cols, rows, tiles, furniture, tileColors, carpetTiles, areaTiles } = layout;
+  const { cols, rows, tiles, furniture, tileColors, carpetTiles, areaTiles, wallSetTiles } = layout;
   const existingColors = tileColors || new Array(tiles.length).fill(null);
 
   let newCols = cols;
@@ -777,6 +792,9 @@ export function expandLayout(
   const newAreaTiles: Array<string | null> | undefined = areaTiles
     ? new Array<string | null>(newSize).fill(null)
     : undefined;
+  const newWallSetTiles: Array<number | null> | undefined = wallSetTiles
+    ? new Array<number | null>(newSize).fill(null)
+    : undefined;
 
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
@@ -789,6 +807,9 @@ export function expandLayout(
       }
       if (newAreaTiles && areaTiles) {
         newAreaTiles[newIdx] = areaTiles[oldIdx] ?? null;
+      }
+      if (newWallSetTiles && wallSetTiles) {
+        newWallSetTiles[newIdx] = wallSetTiles[oldIdx] ?? null;
       }
     }
   }
@@ -810,6 +831,7 @@ export function expandLayout(
       furniture: newFurniture,
       ...(newCarpetTiles ? { carpetTiles: newCarpetTiles } : {}),
       ...(newAreaTiles ? { areaTiles: newAreaTiles } : {}),
+      ...(newWallSetTiles ? { wallSetTiles: newWallSetTiles } : {}),
     },
     shift: { col: shiftCol, row: shiftRow },
   };

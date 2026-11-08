@@ -109,6 +109,7 @@ export function getWallInstances(
   tileMap: TileTypeVal[][],
   tileColors?: Array<ColorValue | null>,
   cols?: number,
+  wallSetTiles?: Array<number | null>,
 ): FurnitureInstance[] {
   if (wallSets.length === 0) return [];
   const tmRows = tileMap.length;
@@ -120,9 +121,14 @@ export function getWallInstances(
       if (tileMap[r][c] !== TileType.WALL) continue;
       const colorIdx = r * layoutCols + c;
       const wallColor = tileColors?.[colorIdx];
-      const wallInfo = wallColor
-        ? getColorizedWallSprite(c, r, tileMap, wallColor)
-        : getWallSprite(c, r, tileMap);
+      const setIndex = wallSetTiles?.[colorIdx] ?? 0;
+      // Set 0 is the bundled grayscale wall, painted in the wall colour. Any
+      // other set is an external sprite set with its own colours, drawn as is
+      // (Colorize would flatten it to a tinted grayscale).
+      const wallInfo =
+        wallColor && setIndex === 0
+          ? getColorizedWallSprite(c, r, tileMap, wallColor, setIndex)
+          : getWallSprite(c, r, tileMap, setIndex);
       if (!wallInfo) continue;
       instances.push({
         sprite: wallInfo.sprite,

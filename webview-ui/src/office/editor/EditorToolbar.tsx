@@ -382,12 +382,17 @@ export function EditorToolbar({
                       ctx.fillRect(0, 0, w, h);
                       return;
                     }
-                    const cacheKey = `wall-preview-${i}-${wallColor.h}-${wallColor.s}-${wallColor.b}-${wallColor.c}`;
-                    const colorized = getColorizedSprite(cacheKey, sprite, {
-                      ...wallColor,
-                      colorize: true,
-                    });
-                    ctx.drawImage(getCachedSprite(colorized, THUMB_ZOOM), 0, 0);
+                    // Like the office: only set 0 takes the wall colour,
+                    // external sets show their own colours.
+                    const shown =
+                      i === 0
+                        ? getColorizedSprite(
+                            `wall-preview-${i}-${wallColor.h}-${wallColor.s}-${wallColor.b}-${wallColor.c}`,
+                            sprite,
+                            { ...wallColor, colorize: true },
+                          )
+                        : sprite;
+                    ctx.drawImage(getCachedSprite(shown, THUMB_ZOOM), 0, 0);
                   }}
                 />
               ))}

@@ -17,7 +17,6 @@ import {
   loadCarpetTiles,
   loadDefaultLayout,
   loadFloorTiles,
-  loadWallTiles,
   sendAssetsToWebview,
   sendCarpetTilesToWebview,
   sendCharacterSpritesToWebview,
@@ -25,7 +24,12 @@ import {
   sendPetSpritesToWebview,
   sendWallTilesToWebview,
 } from '../../server/src/assetLoader.js';
-import { loadAllCharacters, loadAllFurniture, loadAllPets } from '../../server/src/assetReload.js';
+import {
+  loadAllCharacters,
+  loadAllFurniture,
+  loadAllPets,
+  loadAllWalls,
+} from '../../server/src/assetReload.js';
 import {
   getHooksConsent,
   getHooksEnabled,
@@ -897,7 +901,7 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
             }
 
             // Load wall tiles
-            const wallTiles = await loadWallTiles(assetsRoot);
+            const wallTiles = await loadAllWalls(assetsRoot, readConfig().externalAssetDirectories);
             if (wallTiles && this.webview) {
               console.log('[Extension] Wall tiles loaded, sending to webview');
               sendWallTilesToWebview(this.webview, wallTiles);

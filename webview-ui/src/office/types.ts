@@ -169,6 +169,9 @@ export interface OfficeLayout {
   areas?: AreaDefinition[];
   /** Per-tile Area label, parallel to tiles array. null = no area assignment. */
   areaTiles?: Array<string | null>;
+  /** Per-tile wall set index (which wall_N.png), parallel to tiles array; read
+   *  only for WALL tiles. Absent or null = set 0, the bundled walls. */
+  wallSetTiles?: Array<number | null>;
 }
 
 export interface Character {

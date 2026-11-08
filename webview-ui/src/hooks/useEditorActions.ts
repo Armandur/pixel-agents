@@ -638,7 +638,17 @@ export function useEditorActions(
             // The stroke's first tile decides whether it adds or removes walls.
             editorState.wallDragAdding ??= wallStrokeAdds(base, c, r);
             const adding = editorState.wallDragAdding;
-            applyStrokeEdit(wallStrokeTile(base, c, r, adding, editorState.wallColor, floor));
+            applyStrokeEdit(
+              wallStrokeTile(
+                base,
+                c,
+                r,
+                adding,
+                editorState.wallColor,
+                floor,
+                editorState.selectedWallSet,
+              ),
+            );
           }
           return;
         }
@@ -682,8 +692,9 @@ export function useEditorActions(
           const tile = layout.tiles[idx];
           const color = layout.tileColors?.[idx];
           if (tile === TileType.WALL) {
-            // Pick wall color and switch to wall tool
+            // Pick wall color and set, and switch to wall tool
             if (color) editorState.wallColor = { ...color };
+            editorState.selectedWallSet = layout.wallSetTiles?.[idx] ?? 0;
             editorState.activeTool = EditTool.WALL_PAINT;
           } else if (tile !== undefined && tile !== TileType.VOID) {
             editorState.selectedTileType = tile;
