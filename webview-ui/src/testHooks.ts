@@ -16,6 +16,9 @@ declare global {
         isHeadless?: boolean;
         isGreeter?: boolean;
         crowned?: boolean;
+        tileCol: number;
+        tileRow: number;
+        visitPhase?: 'going' | 'talking';
       }>;
       /** The character the camera follows (null = free camera). */
       getCameraFollowId?: () => number | null;
@@ -154,6 +157,9 @@ export function installTestHooks(officeStateRef: { current: OfficeState | null }
       isHeadless: ch.isHeadless,
       isGreeter: ch.isGreeter,
       crowned: ch.crowned,
+      tileCol: ch.tileCol,
+      tileRow: ch.tileRow,
+      visitPhase: ch.visit?.phase,
     }));
   };
 

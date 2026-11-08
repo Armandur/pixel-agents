@@ -15,6 +15,25 @@ export interface Visit extends VisitRequest {
   talkTimer: number;
   /** The recipient's facing before it turned to the sender (restored after). */
   targetPrevDir?: Direction;
+  /** The recipient destination the current path leads next to (see visitDestination). */
+  anchor?: { col: number; row: number };
+}
+
+/**
+ * Where the recipient is heading, which is where the sender should go: the
+ * end of its path while it walks, its seat while it is active (a message
+ * usually makes it start a turn and walk there), else the tile it stands on.
+ * Aiming at the live tile sent the sender to an empty chair the recipient
+ * had just left.
+ */
+export function visitDestination(
+  target: Pick<Character, 'path' | 'isActive' | 'tileCol' | 'tileRow'>,
+  seat: { seatCol: number; seatRow: number } | undefined,
+): { col: number; row: number } {
+  const last = target.path[target.path.length - 1];
+  if (last) return { col: last.col, row: last.row };
+  if (target.isActive && seat) return { col: seat.seatCol, row: seat.seatRow };
+  return { col: target.tileCol, row: target.tileRow };
 }
 
 /** Start now, wait behind the current visit, or drop when the queue is full. */
@@ -38,8 +57,12 @@ export function facingToward(
 }
 
 /** Begin a visit whose path to the recipient is already on `ch.path`. */
-export function beginVisit(ch: Character, req: VisitRequest): void {
-  ch.visit = { ...req, phase: 'going', talkTimer: CONVERSATION_TALK_SEC };
+export function beginVisit(
+  ch: Character,
+  req: VisitRequest,
+  anchor?: { col: number; row: number },
+): void {
+  ch.visit = { ...req, phase: 'going', talkTimer: CONVERSATION_TALK_SEC, anchor };
   ch.state = ch.path.length > 0 ? CharacterState.WALK : CharacterState.IDLE;
   ch.moveProgress = 0;
   ch.frame = 0;

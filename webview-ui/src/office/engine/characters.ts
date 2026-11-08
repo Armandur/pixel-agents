@@ -46,6 +46,18 @@ function directionBetween(
   return Direction.UP;
 }
 
+/** A walking step outside the FSM (a visit): the walk animation that
+ *  updateCharacter's frame timer and WALK branch give a normal walk, plus the
+ *  step itself. Without the animation the character glides. */
+export function walkFrame(ch: Character, dt: number): void {
+  ch.frameTimer += dt;
+  if (ch.frameTimer >= WALK_FRAME_DURATION_SEC) {
+    ch.frameTimer -= WALK_FRAME_DURATION_SEC;
+    ch.frame = (ch.frame + 1) % 4;
+  }
+  stepAlongPath(ch, dt);
+}
+
 /** Walk one frame along `ch.path`: walk animation, facing, position, and
  *  arriving at the next tile. No-op on an empty path. */
 export function stepAlongPath(ch: Character, dt: number): void {

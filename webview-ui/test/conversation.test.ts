@@ -8,10 +8,10 @@ import assert from 'node:assert/strict';
 import { test } from 'vitest';
 
 import { CONVERSATION_QUEUE_MAX, CONVERSATION_TALK_SEC } from '../src/constants.js';
-import { facingToward } from '../src/office/engine/conversation.js';
+import { facingToward, visitDestination } from '../src/office/engine/conversation.js';
 import { OfficeState } from '../src/office/engine/officeState.js';
 import type { Character, OfficeLayout } from '../src/office/types.js';
-import { Direction, TILE_SIZE, TileType } from '../src/office/types.js';
+import { CharacterState, Direction, TILE_SIZE, TileType } from '../src/office/types.js';
 
 function floorLayout(cols = 9, rows = 9): OfficeLayout {
   return {
@@ -94,4 +94,122 @@ test('facingToward picks the dominant axis', () => {
     Direction.RIGHT,
   );
   assert.equal(facingToward({ tileCol: 0, tileRow: 0 }, { tileCol: 0, tileRow: -2 }), Direction.UP);
+});
+
+const line = (col: number, fromRow: number, toRow: number) => {
+  const steps: Array<{ col: number; row: number }> = [];
+  const dir = toRow > fromRow ? 1 : -1;
+  for (let r = fromRow + dir; r !== toRow + dir; r += dir) steps.push({ col, row: r });
+  return steps;
+};
+
+test('visitDestination: path end while walking, seat while active, else the tile', () => {
+  const seat = { seatCol: 4, seatRow: 4 };
+  const at = { tileCol: 1, tileRow: 1 };
+  assert.deepEqual(
+    visitDestination(
+      {
+        ...at,
+        isActive: true,
+        path: [
+          { col: 2, row: 1 },
+          { col: 3, row: 1 },
+        ],
+      },
+      seat,
+    ),
+    { col: 3, row: 1 },
+  );
+  assert.deepEqual(visitDestination({ ...at, isActive: true, path: [] }, seat), { col: 4, row: 4 });
+  assert.deepEqual(visitDestination({ ...at, isActive: false, path: [] }, seat), {
+    col: 1,
+    row: 1,
+  });
+});
+
+test('a walking recipient is met where it is going, not where it was', () => {
+  const { os, sender, recipient } = office();
+  // The recipient sets off from (7,7) up to (7,2) as the message arrives.
+  recipient.path = line(7, 7, 2);
+  recipient.state = CharacterState.WALK;
+
+  os.startConversation(1, 2, 'hej');
+  assert.deepEqual(sender.visit?.anchor, { col: 7, row: 2 });
+  runUntil(os, () => sender.visit?.phase === 'talking');
+  assert.equal(distance(sender, recipient), 1, 'beside the recipient when the talk starts');
+  assert.ok(Math.abs(sender.tileRow - 2) <= 1, 'near the destination row, not the start (7)');
+});
+
+test('the sender re-aims when the recipient changes course mid-walk', () => {
+  const { os, sender, recipient } = office();
+  os.startConversation(1, 2, 'hej');
+  os.update(0.3); // the sender is under way toward (7,7)
+  recipient.path = line(7, 7, 2);
+  recipient.state = CharacterState.WALK;
+
+  runUntil(os, () => sender.visit?.phase === 'talking');
+  assert.equal(sender.visit?.phase, 'talking');
+  assert.equal(distance(sender, recipient), 1, 'beside the recipient after it moved');
+  assert.ok(Math.abs(sender.tileRow - 2) <= 1, 'followed it toward row 2');
+});
+
+test('the walk animates: WALK state and changing frames, not a glide', () => {
+  const { os, sender } = office();
+  os.startConversation(1, 2, 'hej');
+  const frames = new Set<number>();
+  runUntil(os, () => {
+    if (sender.visit?.phase === 'going' && sender.path.length > 0) {
+      assert.equal(sender.state, CharacterState.WALK);
+      frames.add(sender.frame);
+    }
+    return sender.visit?.phase === 'talking';
+  });
+  assert.ok(frames.size > 1, `walk frames cycled (saw ${[...frames].join(',')})`);
+});
+
+test('the recipient holds still while being talked to, then carries on', () => {
+  const { os, sender, recipient } = office();
+  os.startConversation(1, 2, 'hej');
+  runUntil(os, () => sender.visit?.phase === 'talking');
+  assert.equal(sender.visit?.phase, 'talking');
+
+  // Mid-talk the recipient becomes active with a seat across the room: unheld
+  // it would walk off at once.
+  os.seats.set('far', {
+    uid: 'far',
+    seatCol: 1,
+    seatRow: 7,
+    facingDir: Direction.DOWN,
+    assigned: true,
+  });
+  recipient.seatId = 'far';
+  recipient.isActive = true;
+  recipient.state = CharacterState.IDLE; // standing (it was wandering), not seated
+  const held = {
+    col: recipient.tileCol,
+    row: recipient.tileRow,
+    x: recipient.x,
+    y: recipient.y,
+    dir: recipient.dir,
+  };
+  for (let t = 0; t < CONVERSATION_TALK_SEC - 0.5; t += 0.05) {
+    os.update(0.05);
+    assert.deepEqual(
+      {
+        col: recipient.tileCol,
+        row: recipient.tileRow,
+        x: recipient.x,
+        y: recipient.y,
+        dir: recipient.dir,
+      },
+      held,
+    );
+  }
+  runUntil(os, () => sender.visit === undefined, 2);
+  runUntil(os, () => recipient.tileCol !== held.col || recipient.tileRow !== held.row, 10);
+  assert.notDeepEqual(
+    { col: recipient.tileCol, row: recipient.tileRow },
+    { col: held.col, row: held.row },
+    'walks to its seat after the talk',
+  );
 });

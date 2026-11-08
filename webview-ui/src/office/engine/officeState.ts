@@ -38,9 +38,9 @@ import type {
   TileType as TileTypeVal,
 } from '../types.js';
 import { CharacterState, Direction, PetState, TILE_SIZE } from '../types.js';
-import { createCharacter, stepAlongPath, updateCharacter } from './characters.js';
+import { createCharacter, updateCharacter, walkFrame } from './characters.js';
 import type { VisitRequest } from './conversation.js';
-import { advanceVisit, beginVisit, requestVisit } from './conversation.js';
+import { advanceVisit, beginVisit, requestVisit, visitDestination } from './conversation.js';
 import { advanceMatrixEffect, startMatrixEffect } from './matrixEffectState.js';
 import { createPet, updatePet } from './petEntity.js';
 import { anchorTile, closestFreeSeat } from './seatPlacement.js';
@@ -406,8 +406,13 @@ export class OfficeState {
     return this.pickFromSeats(freeSeats, electronicsTiles);
   }
 
-  /** Closest walkable tile to (col,row) not occupied by another character, or null. */
-  private closestFreeWalkableTile(col: number, row: number): { col: number; row: number } | null {
+  /** Closest walkable tile to (col,row) not occupied by another character, at
+   *  least `minDistance` tiles away (1 = beside it, never on it), or null. */
+  private closestFreeWalkableTile(
+    col: number,
+    row: number,
+    minDistance = 0,
+  ): { col: number; row: number } | null {
     const occupied = new Set<string>();
     for (const ch of this.characters.values()) {
       occupied.add(`${ch.tileCol},${ch.tileRow}`);
@@ -417,7 +422,7 @@ export class OfficeState {
     for (const tile of this.walkableTiles) {
       if (occupied.has(`${tile.col},${tile.row}`)) continue;
       const d = Math.abs(tile.col - col) + Math.abs(tile.row - row);
-      if (d < bestDist) {
+      if (d >= minDistance && d < bestDist) {
         best = tile;
         bestDist = d;
       }
@@ -1143,14 +1148,39 @@ export class OfficeState {
   private startVisit(ch: Character, req: VisitRequest): void {
     const target = this.characters.get(req.targetId);
     if (!target) return;
-    const spot = this.closestFreeWalkableTile(target.tileCol, target.tileRow);
-    ch.path =
-      spot && (spot.col !== ch.tileCol || spot.row !== ch.tileRow)
-        ? this.withOwnSeatUnblocked(ch, () =>
-            findPath(ch.tileCol, ch.tileRow, spot.col, spot.row, this.tileMap, this.blockedTiles),
-          )
-        : [];
-    beginVisit(ch, req);
+    const anchor = this.visitAnchor(target);
+    ch.path = this.pathNextTo(ch, anchor);
+    beginVisit(ch, req, anchor);
+  }
+
+  private visitAnchor(target: Character): { col: number; row: number } {
+    return visitDestination(target, target.seatId ? this.seats.get(target.seatId) : undefined);
+  }
+
+  /** Path to the free walkable tile closest to `anchor` (empty if already there). */
+  private pathNextTo(
+    ch: Character,
+    anchor: { col: number; row: number },
+  ): Array<{ col: number; row: number }> {
+    // Beside the destination, never on it: the recipient will stand there.
+    const spot = this.closestFreeWalkableTile(anchor.col, anchor.row, 1);
+    if (!spot || (spot.col === ch.tileCol && spot.row === ch.tileRow)) return [];
+    return this.withOwnSeatUnblocked(ch, () =>
+      findPath(ch.tileCol, ch.tileRow, spot.col, spot.row, this.tileMap, this.blockedTiles),
+    );
+  }
+
+  /** A walking sender whose recipient changed course re-aims, at a tile
+   *  boundary so the walk does not jump back mid-step. */
+  private retargetVisit(ch: Character): void {
+    const visit = ch.visit;
+    const target = visit && this.characters.get(visit.targetId);
+    if (!visit || !target || visit.phase !== 'going' || ch.moveProgress !== 0) return;
+    const anchor = this.visitAnchor(target);
+    if (visit.anchor && anchor.col === visit.anchor.col && anchor.row === visit.anchor.row) return;
+    visit.anchor = anchor;
+    ch.path = this.pathNextTo(ch, anchor);
+    ch.state = ch.path.length > 0 ? CharacterState.WALK : CharacterState.IDLE;
   }
 
   /** Crown an agent (config crownedSessions). Remembered for an agent whose
@@ -1185,6 +1215,13 @@ export class OfficeState {
       this.greeter = null;
     }
 
+    // Recipients being talked to hold still (position and facing) for the
+    // talk; while the sender is still walking over they carry on as usual.
+    const heldForTalk = new Set<number>();
+    for (const ch of this.characters.values()) {
+      if (ch.visit?.phase === 'talking') heldForTalk.add(ch.visit.targetId);
+    }
+
     const toDelete: number[] = [];
     for (const ch of this.characters.values()) {
       const effect = advanceMatrixEffect(ch, dt);
@@ -1195,12 +1232,13 @@ export class OfficeState {
 
       if (ch.visit) {
         // Delivering a message: the visit replaces the FSM until it ends.
+        this.retargetVisit(ch);
         const target = this.characters.get(ch.visit.targetId);
-        if (advanceVisit(ch, target, dt, stepAlongPath) === 'done') {
+        if (advanceVisit(ch, target, dt, walkFrame) === 'done') {
           const next = ch.visitQueue?.shift();
           if (next) this.startVisit(ch, next);
         }
-      } else {
+      } else if (!heldForTalk.has(ch.id)) {
         // Temporarily unblock own seat so character can pathfind to it
         this.withOwnSeatUnblocked(ch, () =>
           updateCharacter(ch, dt, this.walkableTiles, this.seats, this.tileMap, this.blockedTiles),
