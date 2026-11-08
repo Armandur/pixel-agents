@@ -13,7 +13,7 @@ import {
   installHooks as installerInstallHooks,
   uninstallHooks as installerUninstallHooks,
 } from './claudeHookInstaller.js';
-import { readClaudeSessionNames } from './claudeSessionRegistry.js';
+import { readClaudeSessionNames, resolveClaudeSessionTarget } from './claudeSessionRegistry.js';
 import { claudeTeamProvider } from './claudeTeamProvider.js';
 import { CONSENT_DISCLOSURE, CONSENT_INSTALL_HEADLINE } from './consentCopy.js';
 import {
@@ -127,6 +127,19 @@ function getAllSessionRoots(): string[] {
 // currentHookToolId state. Synthetic hook-* ids are returned for PreToolUse because
 // the real tool id arrives later via JSONL polling.
 
+/** A cross-session SendMessage's resolved recipient and summary, if any. */
+function sendMessageTarget(
+  toolName: string,
+  toolInput: Record<string, unknown>,
+): { sessionId: string; summary?: string } | undefined {
+  if (toolName !== 'SendMessage' || typeof toolInput.to !== 'string') return undefined;
+  const sessionId = resolveClaudeSessionTarget(toolInput.to);
+  if (!sessionId) return undefined;
+  const summary =
+    typeof toolInput.summary === 'string' && toolInput.summary ? toolInput.summary : undefined;
+  return { sessionId, summary };
+}
+
 function normalizeHookEvent(
   raw: Record<string, unknown>,
 ): { sessionId: string; event: AgentEvent } | null {
@@ -149,6 +162,7 @@ function normalizeHookEvent(
           toolName,
           input: toolInput,
           runInBackground: toolInput.run_in_background === true,
+          messageTo: sendMessageTarget(toolName, toolInput),
         },
       };
     }

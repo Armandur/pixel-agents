@@ -419,6 +419,15 @@ export class HookEventHandler {
    * JSONL still handles detailed tool tracking (toolId, status text, webview messages).
    * This just ensures the character starts animating without waiting for the 500ms JSONL poll.
    */
+  /** A message to another tracked agent: the office walks the sender over. */
+  private announceConversation(fromId: number, to: { sessionId: string; summary?: string }): void {
+    for (const [toId, target] of this.agents) {
+      if (toId === fromId || target.sessionId !== to.sessionId) continue;
+      this.agents.broadcast({ type: 'agentConversation', fromId, toId, summary: to.summary });
+      return;
+    }
+  }
+
   private handlePreToolUse(
     normEvent: Extract<AgentEvent, { kind: 'toolStart' }>,
     agent: AgentState,
@@ -436,6 +445,8 @@ export class HookEventHandler {
     agent.currentHookToolName = toolName;
     agent.currentHookIsTeammateSpawn =
       this.provider.team?.isTeammateSpawnCall(toolName, toolInput) ?? false;
+
+    if (normEvent.messageTo) this.announceConversation(agentId, normEvent.messageTo);
 
     // When a lead has inline teammates, hook tool events are ambiguous (could be
     // from the lead or any teammate -- they share session_id). Suppress hook-originated

@@ -27,6 +27,7 @@ export type ServerMessage =
   | AgentContextUsage
   | AgentSessionName
   | AgentIdleSince
+  | AgentConversation
   | LayoutLoaded
   | FurnitureAssetsLoaded
   | CharacterSpritesLoaded
@@ -217,6 +218,13 @@ export interface AgentIdleSince {
   type: 'agentIdleSince';
   id: number;
   since?: number;
+}
+
+export interface AgentConversation {
+  type: 'agentConversation';
+  fromId: number;
+  toId: number;
+  summary?: string;
 }
 
 export interface LayoutLoaded {

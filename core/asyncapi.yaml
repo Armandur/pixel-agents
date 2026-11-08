@@ -102,6 +102,7 @@ components:
         - $ref: '#/components/schemas/AgentContextUsage'
         - $ref: '#/components/schemas/AgentSessionName'
         - $ref: '#/components/schemas/AgentIdleSince'
+        - $ref: '#/components/schemas/AgentConversation'
         # Layout
         - $ref: '#/components/schemas/LayoutLoaded'
         # Assets
@@ -444,6 +445,24 @@ components:
           type: integer
         teamUsesTmux:
           type: boolean
+
+    AgentConversation:
+      description: |
+        One agent sent another tracked agent a message (Claude's cross-session
+        SendMessage). The office walks the sender over to the recipient and
+        shows `summary` in a speech bubble.
+      type: object
+      additionalProperties: false
+      required: [type, fromId, toId]
+      properties:
+        type:
+          const: agentConversation
+        fromId:
+          type: integer
+        toId:
+          type: integer
+        summary:
+          type: string
 
     AgentIdleSince:
       description: |

@@ -38,7 +38,9 @@ import type {
   TileType as TileTypeVal,
 } from '../types.js';
 import { CharacterState, Direction, PetState, TILE_SIZE } from '../types.js';
-import { createCharacter, updateCharacter } from './characters.js';
+import { createCharacter, stepAlongPath, updateCharacter } from './characters.js';
+import type { VisitRequest } from './conversation.js';
+import { advanceVisit, beginVisit, requestVisit } from './conversation.js';
 import { advanceMatrixEffect, startMatrixEffect } from './matrixEffectState.js';
 import { createPet, updatePet } from './petEntity.js';
 import { anchorTile, closestFreeSeat } from './seatPlacement.js';
@@ -1124,6 +1126,33 @@ export class OfficeState {
     ch.providerId = providerId;
   }
 
+  /**
+   * `fromId` sent `toId` a message: walk the sender to the free walkable tile
+   * closest to the recipient and have it say `summary` there. A sender that is
+   * already on a visit queues it (see requestVisit); unknown or sub-agent
+   * characters are ignored.
+   */
+  startConversation(fromId: number, toId: number, summary?: string): void {
+    const ch = this.characters.get(fromId);
+    if (!ch || ch.isSubagent || fromId === toId || !this.characters.has(toId)) return;
+    if (requestVisit(ch, { targetId: toId, summary }) === 'start') {
+      this.startVisit(ch, { targetId: toId, summary });
+    }
+  }
+
+  private startVisit(ch: Character, req: VisitRequest): void {
+    const target = this.characters.get(req.targetId);
+    if (!target) return;
+    const spot = this.closestFreeWalkableTile(target.tileCol, target.tileRow);
+    ch.path =
+      spot && (spot.col !== ch.tileCol || spot.row !== ch.tileRow)
+        ? this.withOwnSeatUnblocked(ch, () =>
+            findPath(ch.tileCol, ch.tileRow, spot.col, spot.row, this.tileMap, this.blockedTiles),
+          )
+        : [];
+    beginVisit(ch, req);
+  }
+
   /** Crown an agent (config crownedSessions). Remembered for an agent whose
    *  character does not exist yet: the session name can arrive before the
    *  layout has placed it, and addAgent applies it then. */
@@ -1164,10 +1193,19 @@ export class OfficeState {
         continue; // skip normal FSM while the effect is (or just was) active
       }
 
-      // Temporarily unblock own seat so character can pathfind to it
-      this.withOwnSeatUnblocked(ch, () =>
-        updateCharacter(ch, dt, this.walkableTiles, this.seats, this.tileMap, this.blockedTiles),
-      );
+      if (ch.visit) {
+        // Delivering a message: the visit replaces the FSM until it ends.
+        const target = this.characters.get(ch.visit.targetId);
+        if (advanceVisit(ch, target, dt, stepAlongPath) === 'done') {
+          const next = ch.visitQueue?.shift();
+          if (next) this.startVisit(ch, next);
+        }
+      } else {
+        // Temporarily unblock own seat so character can pathfind to it
+        this.withOwnSeatUnblocked(ch, () =>
+          updateCharacter(ch, dt, this.walkableTiles, this.seats, this.tileMap, this.blockedTiles),
+        );
+      }
 
       // Tick bubble timer for waiting bubbles
       if (ch.bubbleType === 'waiting') {

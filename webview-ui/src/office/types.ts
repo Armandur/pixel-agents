@@ -25,6 +25,7 @@ export type TileType = (typeof TileType)[keyof typeof TileType];
 /** Re-export ColorValue for consumers that import color types from office/types */
 export type { ColorValue } from '../components/ui/types.js';
 import type { ColorValue } from '../components/ui/types.js';
+import type { Visit, VisitRequest } from './engine/conversation.js';
 
 export const CharacterState = {
   IDLE: 'idle',
@@ -247,6 +248,10 @@ export interface Character {
   isTeamLead?: boolean;
   /** Session name is listed in config crownedSessions: drawn with a crown. */
   crowned?: boolean;
+  /** Walking over to another agent to deliver a message (replaces the FSM). */
+  visit?: Visit;
+  /** Further messages waiting for the current visit to end. */
+  visitQueue?: VisitRequest[];
   /** ID of the lead agent (set on teammates) */
   leadAgentId?: number;
   /** True when lead spawns teammates via tmux (run_in_background Agent calls) */

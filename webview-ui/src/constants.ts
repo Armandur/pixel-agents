@@ -67,6 +67,13 @@ export function providerBadge(providerId: string | undefined): ProviderBadge | u
  *  on the hair instead of floating. The head's top row is measured per drawn
  *  frame: it moves between palettes, directions and the typing lean. */
 export const CROWN_HAIR_OVERLAP_PX = 1;
+/** How long a messaging agent stands talking at its recipient. */
+export const CONVERSATION_TALK_SEC = 4;
+/** Messages a sender may have waiting behind its current visit. */
+export const CONVERSATION_QUEUE_MAX = 3;
+/** CSS px the talk bubble sits above the point the activity label hangs from,
+ *  so it clears the label instead of covering it. */
+export const CONVERSATION_BUBBLE_LIFT_PX = 40;
 /** A crowned agent's name on its card. */
 export const CROWNED_NAME_COLOR = '#ffd700';
 /** Badge size and offset from the sprite's bottom-right corner, in sprite pixels. */

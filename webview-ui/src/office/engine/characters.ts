@@ -46,6 +46,32 @@ function directionBetween(
   return Direction.UP;
 }
 
+/** Walk one frame along `ch.path`: walk animation, facing, position, and
+ *  arriving at the next tile. No-op on an empty path. */
+export function stepAlongPath(ch: Character, dt: number): void {
+  const nextTile = ch.path[0];
+  if (!nextTile) return;
+  ch.dir = directionBetween(ch.tileCol, ch.tileRow, nextTile.col, nextTile.row);
+
+  ch.moveProgress += (WALK_SPEED_PX_PER_SEC / TILE_SIZE) * dt;
+
+  const fromCenter = tileCenter(ch.tileCol, ch.tileRow);
+  const toCenter = tileCenter(nextTile.col, nextTile.row);
+  const t = Math.min(ch.moveProgress, 1);
+  ch.x = fromCenter.x + (toCenter.x - fromCenter.x) * t;
+  ch.y = fromCenter.y + (toCenter.y - fromCenter.y) * t;
+
+  if (ch.moveProgress >= 1) {
+    // Arrived at next tile
+    ch.tileCol = nextTile.col;
+    ch.tileRow = nextTile.row;
+    ch.x = toCenter.x;
+    ch.y = toCenter.y;
+    ch.path.shift();
+    ch.moveProgress = 0;
+  }
+}
+
 export function createCharacter(
   id: number,
   palette: number,
@@ -268,27 +294,7 @@ export function updateCharacter(
         break;
       }
 
-      // Move toward next tile in path
-      const nextTile = ch.path[0];
-      ch.dir = directionBetween(ch.tileCol, ch.tileRow, nextTile.col, nextTile.row);
-
-      ch.moveProgress += (WALK_SPEED_PX_PER_SEC / TILE_SIZE) * dt;
-
-      const fromCenter = tileCenter(ch.tileCol, ch.tileRow);
-      const toCenter = tileCenter(nextTile.col, nextTile.row);
-      const t = Math.min(ch.moveProgress, 1);
-      ch.x = fromCenter.x + (toCenter.x - fromCenter.x) * t;
-      ch.y = fromCenter.y + (toCenter.y - fromCenter.y) * t;
-
-      if (ch.moveProgress >= 1) {
-        // Arrived at next tile
-        ch.tileCol = nextTile.col;
-        ch.tileRow = nextTile.row;
-        ch.x = toCenter.x;
-        ch.y = toCenter.y;
-        ch.path.shift();
-        ch.moveProgress = 0;
-      }
+      stepAlongPath(ch, dt);
 
       // If became active while wandering, repath to seat
       if (ch.isActive && ch.seatId) {

@@ -16,6 +16,7 @@ import {
   CONTEXT_GAUGE_HEIGHT_PX,
   CONTEXT_GAUGE_WIDTH_PX,
   CONTEXT_WARN_THRESHOLD,
+  CONVERSATION_BUBBLE_LIFT_PX,
   OVERLAY_BUBBLE_Z_INDEX,
   OVERLAY_LABEL_SELECTED_Z_INDEX,
   OVERLAY_LABEL_Z_INDEX,
@@ -166,6 +167,34 @@ export function ToolOverlay({
             >
               <OverlayBubble cached={cachedBubble} dpr={dpr} />
             </div>
+          );
+        }
+
+        // A messaging agent talking at its recipient says the message's
+        // summary in a speech bubble, above its own label.
+        if (ch.visit?.phase === 'talking') {
+          const talkSittingOff = ch.state === CharacterState.TYPE ? CHARACTER_SITTING_OFFSET_PX : 0;
+          const talkNode = (
+            <div
+              className="absolute -translate-x-1/2 -translate-y-full pointer-events-none pixel-panel border-border px-8 py-4 text-base leading-tight max-w-2xs overflow-hidden text-ellipsis whitespace-nowrap"
+              style={{
+                left: project.toScreenX(ch.x),
+                top:
+                  project.toScreenY(ch.y + talkSittingOff - TOOL_OVERLAY_VERTICAL_OFFSET) -
+                  CONVERSATION_BUBBLE_LIFT_PX,
+                zIndex: OVERLAY_BUBBLE_Z_INDEX,
+              }}
+              data-testid="conversation-bubble"
+              data-agent-id={id}
+            >
+              {ch.visit.summary ?? '...'}
+            </div>
+          );
+          bubbleNode = (
+            <>
+              {bubbleNode}
+              {talkNode}
+            </>
           );
         }
 

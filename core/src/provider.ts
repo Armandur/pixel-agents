@@ -21,6 +21,10 @@ export type AgentEvent =
        *  `run_in_background` on Agent/Task). Handlers use this to suppress ghost
        *  sub-agent characters for teammate spawns. */
       runInBackground?: boolean;
+      /** The tool sends a message to another session the provider could
+       *  resolve (Claude's cross-session SendMessage). Drives the office's
+       *  walk-over-and-talk. */
+      messageTo?: { sessionId: string; summary?: string };
     }
   | { kind: 'toolEnd'; toolId: string }
   | {

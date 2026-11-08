@@ -867,6 +867,12 @@ export function useExtensionMessages(
         const crowned = msg.crowned === true;
         setAgentCrowned((prev) => (!!prev[id] === crowned ? prev : { ...prev, [id]: crowned }));
         os.setAgentCrowned(id, crowned);
+      } else if (msg.type === 'agentConversation') {
+        os.startConversation(
+          msg.fromId as number,
+          msg.toId as number,
+          typeof msg.summary === 'string' ? msg.summary : undefined,
+        );
       } else if (msg.type === 'agentIdleSince') {
         const id = msg.id as number;
         const since = typeof msg.since === 'number' ? msg.since : undefined;
