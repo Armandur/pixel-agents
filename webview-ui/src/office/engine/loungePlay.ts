@@ -6,6 +6,7 @@ import {
 import { getCatalogEntry } from '../layout/furnitureCatalog.js';
 import type { Character, PlacedFurniture } from '../types.js';
 import { CharacterState, Direction } from '../types.js';
+import { facingToward } from './conversation.js';
 
 /**
  * Games in the lounge: idle agents walk up to a game (arcade, air hockey) and
@@ -96,6 +97,30 @@ export function arriveAtGame(ch: Character, partner: Character | undefined, rand
   } else {
     lounge.timer = LOUNGE_PLAY_WAIT_MAX_SEC;
   }
+}
+
+/**
+ * A two-player game is never played alone: the first player stops one step
+ * short of its spot, turned toward the other, until that one is a step from
+ * its own spot too, so both reach the table together. Waiting too long, or
+ * a partner that gave up, ends the game ('next').
+ */
+export function holdBeforeGame(
+  ch: Character,
+  partner: Character | undefined,
+  dt: number,
+): 'go' | 'walking' | 'next' {
+  const lounge = ch.lounge!;
+  if (lounge.partnerId === undefined) return 'go';
+  if (partnerQuit(ch, partner)) return 'next';
+  const partnerClose = partner!.lounge!.phase === 'resting' || partner!.path.length <= 1;
+  if (ch.path.length !== 1 || ch.moveProgress > 0 || partnerClose) return 'go';
+  lounge.timer += dt;
+  if (lounge.timer > LOUNGE_PLAY_WAIT_MAX_SEC) return 'next';
+  ch.state = CharacterState.IDLE;
+  ch.frame = 0;
+  ch.dir = facingToward(ch, partner!);
+  return 'walking';
 }
 
 /** The partner left the game (turned active, or went elsewhere): stop too. */

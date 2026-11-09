@@ -12,7 +12,7 @@ import type { Character, OfficeLayout, Seat } from '../types.js';
 import { CharacterState } from '../types.js';
 import { facingToward } from './conversation.js';
 import type { LoungeGame, PlaySpotTile } from './loungePlay.js';
-import { arriveAtGame, partnerQuit, playableGames } from './loungePlay.js';
+import { arriveAtGame, holdBeforeGame, partnerQuit, playableGames } from './loungePlay.js';
 
 /**
  * The lounge ("fikarummet"): agents idle long enough leave their desk for an
@@ -185,7 +185,12 @@ export function advanceLounge(
   const lounge = ch.lounge;
   if (!lounge) return 'next';
   if (lounge.phase === 'walking') {
+    if (lounge.activity === 'play') {
+      const hold = holdBeforeGame(ch, partner, dt);
+      if (hold !== 'go') return hold;
+    }
     if (ch.path.length > 0) {
+      ch.state = CharacterState.WALK;
       step(ch, dt);
       return 'walking';
     }

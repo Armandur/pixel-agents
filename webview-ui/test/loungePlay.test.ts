@@ -127,6 +127,54 @@ test('the first to arrive waits; the game lights only with both at it; a quitter
   );
 });
 
+test('a two-player game is never played alone: the first holds a step short until the other is close', () => {
+  const a = lounger(1, 0, 0);
+  const b = lounger(2, 9, 9);
+  const c = ctx([a, b], [{ uid: 'h', type: 'HOCKEY', col: 3, row: 3 }]);
+  planLoungeActivity(a, c, play);
+  a.path = [{ col: 3, row: 2 }]; // one step from its spot
+  b.path = [
+    { col: 7, row: 7 },
+    { col: 6, row: 6 },
+    { col: 4, row: 6 },
+  ]; // still far from its own
+  const stepped: number[] = [];
+  const step = (ch: Character) => {
+    stepped.push(ch.id);
+    ch.path.shift();
+  };
+  advanceLounge(a, 0.1, new Map(), b, step, () => 0.5);
+  assert.deepEqual(stepped, [], 'a holds');
+  assert.equal(a.lounge?.phase, 'walking', 'not at the table');
+  assert.equal(a.state, CharacterState.IDLE);
+  b.path = [{ col: 4, row: 6 }]; // b is a step from its spot now
+  advanceLounge(a, 0.1, new Map(), b, step, () => 0.5);
+  assert.deepEqual(stepped, [1], 'a steps in as b comes close');
+});
+
+test('a player held back too long gives the game up', () => {
+  const a = lounger(1, 0, 0);
+  const b = lounger(2, 9, 9);
+  const c = ctx([a, b], [{ uid: 'h', type: 'HOCKEY', col: 3, row: 3 }]);
+  planLoungeActivity(a, c, play);
+  a.path = [{ col: 3, row: 2 }];
+  b.path = [
+    { col: 7, row: 7 },
+    { col: 6, row: 6 },
+  ];
+  let r = '';
+  for (let t = 0; t < 25 && r !== 'next'; t += 0.5)
+    r = advanceLounge(
+      a,
+      0.5,
+      new Map(),
+      b,
+      () => {},
+      () => 0.5,
+    );
+  assert.equal(r, 'next');
+});
+
 test('a game whose spot is not standable is never offered, and solo games need nobody', () => {
   const a = lounger(1, 0, 0);
   const c = ctx(
