@@ -107,6 +107,7 @@ export class OfficeState {
   private loungeCache: { layout: OfficeLayout; keys: Set<string> } | null = null;
   /** Placed games, cached per layout object (see loungeGames()). */
   private gamesCache: { layout: OfficeLayout; games: LoungeGame[] } | null = null;
+  private electronicsCache: { layout: OfficeLayout; tiles: Set<string> } | null = null;
   hoveredTile: { col: number; row: number } | null = null;
   /** Maps "parentId:toolId" → sub-agent character ID (negative) */
   subagentIdMap: Map<string, number> = new Map();
@@ -331,6 +332,14 @@ export class OfficeState {
   }
 
   /** Collect every tile occupied by electronics furniture (PCs, monitors, etc.). */
+  /** buildElectronicsTileSet, cached per layout object (auto-state runs often). */
+  private electronicsTiles(): Set<string> {
+    if (this.electronicsCache?.layout !== this.layout) {
+      this.electronicsCache = { layout: this.layout, tiles: this.buildElectronicsTileSet() };
+    }
+    return this.electronicsCache.tiles;
+  }
+
   private buildElectronicsTileSet(): Set<string> {
     const out = new Set<string>();
     for (const item of this.layout.furniture) {
@@ -926,8 +935,12 @@ export class OfficeState {
   /** Rebuild furniture instances with auto-state applied (active agents turn electronics ON) */
   private rebuildFurnitureInstances(): void {
     // Electronics turn ON only in front of an agent working at its desk
-    const autoOnTiles = collectAutoOnTiles(this.characters.values(), this.seats, (id) =>
-      this.idleSinceById.has(id),
+    const electronics = this.electronicsTiles();
+    const autoOnTiles = collectAutoOnTiles(
+      this.characters.values(),
+      this.seats,
+      (id) => this.idleSinceById.has(id),
+      (col, row) => electronics.has(`${col},${row}`),
     );
     // ...and a lounge game lights up while its players are at it
     for (const tile of litGameTiles(this.characters.values(), this.loungeGames())) {

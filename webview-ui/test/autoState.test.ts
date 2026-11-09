@@ -31,8 +31,13 @@ const pc = (id: string, state: 'on' | 'off'): CatalogAsset => ({
 beforeAll(() => {
   assert.ok(
     buildDynamicCatalog({
-      catalog: [pc('PC_OFF', 'off'), pc('PC_ON', 'on')],
-      sprites: { PC_OFF: [['screen-off']], PC_ON: [['screen-on']] },
+      catalog: [
+        pc('PC_OFF', 'off'),
+        pc('PC_ON', 'on'),
+        // A side-view monitor: electronics, but no ON look of its own.
+        { ...pc('SIDE', 'off'), groupId: 'SIDE', state: undefined },
+      ],
+      sprites: { PC_OFF: [['screen-off']], PC_ON: [['screen-on']], SIDE: [['side']] },
     }),
   );
 });
@@ -119,4 +124,52 @@ test('the screen goes dark when the agent is removed or moved to another seat', 
   moved.ch.seatId = 'other';
   moved.os.update(0.25);
   assert.equal(screenOn(moved.os), false, 'moved to another seat');
+});
+
+test('only the nearest electronics in front lights up: a side monitor beats the PC beyond it', () => {
+  // Rasmus 2026-11-09: at a shared table the agent on the right side faces
+  // left at its own side monitor, and the front PC two tiles on lit instead.
+  const { os, ch } = office();
+  const layout = os.getLayout();
+  os.rebuildFromLayout({
+    ...layout,
+    furniture: [
+      { uid: 'side', type: 'SIDE', col: 4, row: 3 },
+      { uid: 'pc', type: 'PC_OFF', col: 2, row: 3 },
+    ],
+  });
+  os.seats.set('desk', {
+    uid: 'desk',
+    seatCol: 5,
+    seatRow: 3,
+    facingDir: Direction.LEFT,
+    assigned: true,
+  });
+  Object.assign(ch, {
+    seatId: 'desk',
+    tileCol: 5,
+    tileRow: 3,
+    state: CharacterState.TYPE,
+    path: [],
+  });
+  os.setAgentActive(1, true);
+  assert.equal(screenOn(os), false, 'the PC beyond the side monitor stays dark');
+
+  os.rebuildFromLayout({ ...layout, furniture: [{ uid: 'pc', type: 'PC_OFF', col: 3, row: 3 }] });
+  os.seats.set('desk', {
+    uid: 'desk',
+    seatCol: 5,
+    seatRow: 3,
+    facingDir: Direction.LEFT,
+    assigned: true,
+  });
+  Object.assign(ch, {
+    seatId: 'desk',
+    tileCol: 5,
+    tileRow: 3,
+    state: CharacterState.TYPE,
+    path: [],
+  });
+  os.setAgentActive(1, true);
+  assert.equal(screenOn(os), true, 'with nothing nearer, the PC two tiles ahead lights');
 });

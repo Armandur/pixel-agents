@@ -17,12 +17,19 @@ export function isWorkingAtDesk(ch: Character, seat: Seat | undefined, idle: boo
   );
 }
 
-/** Tiles whose electronics turn ON: in front of (and beside) every seat whose
- *  agent isWorkingAtDesk. */
+/**
+ * Tiles whose electronics turn ON: for every seat whose agent isWorkingAtDesk,
+ * the ONE nearest tile holding electronics in front of it — straight ahead
+ * first, then beside that line, one step deeper at a time (up to
+ * AUTO_ON_FACING_DEPTH ahead, AUTO_ON_SIDE_DEPTH for the sides). Only the
+ * nearest: at a shared table the agent's own side monitor must win over the
+ * front-facing PC two tiles on, even when the side monitor has no ON look.
+ */
 export function collectAutoOnTiles(
   characters: Iterable<Character>,
   seats: Map<string, Seat>,
   isIdle: (id: number) => boolean,
+  hasElectronics: (col: number, row: number) => boolean,
 ): Set<string> {
   const tiles = new Set<string>();
   for (const ch of characters) {
@@ -31,24 +38,29 @@ export function collectAutoOnTiles(
     const dCol =
       seat.facingDir === Direction.RIGHT ? 1 : seat.facingDir === Direction.LEFT ? -1 : 0;
     const dRow = seat.facingDir === Direction.DOWN ? 1 : seat.facingDir === Direction.UP ? -1 : 0;
-    // The desk could be 1-3 tiles deep in the facing direction
-    for (let d = 1; d <= AUTO_ON_FACING_DEPTH; d++) {
-      tiles.add(`${seat.seatCol + dCol * d},${seat.seatRow + dRow * d}`);
-    }
-    // ...and wide: the tiles to either side of the facing direction
-    for (let d = 1; d <= AUTO_ON_SIDE_DEPTH; d++) {
-      const baseCol = seat.seatCol + dCol * d;
-      const baseRow = seat.seatRow + dRow * d;
-      if (dCol !== 0) {
-        tiles.add(`${baseCol},${baseRow - 1}`);
-        tiles.add(`${baseCol},${baseRow + 1}`);
-      } else {
-        tiles.add(`${baseCol - 1},${baseRow}`);
-        tiles.add(`${baseCol + 1},${baseRow}`);
-      }
-    }
+    const hit = nearestElectronics(seat, dCol, dRow, hasElectronics);
+    if (hit) tiles.add(hit);
   }
   return tiles;
+}
+
+function nearestElectronics(
+  seat: Seat,
+  dCol: number,
+  dRow: number,
+  has: (col: number, row: number) => boolean,
+): string | null {
+  for (let d = 1; d <= AUTO_ON_FACING_DEPTH; d++) {
+    const col = seat.seatCol + dCol * d;
+    const row = seat.seatRow + dRow * d;
+    const candidates: Array<[number, number]> = [[col, row]];
+    if (d <= AUTO_ON_SIDE_DEPTH) {
+      if (dCol !== 0) candidates.push([col, row - 1], [col, row + 1]);
+      else candidates.push([col - 1, row], [col + 1, row]);
+    }
+    for (const [c, r] of candidates) if (has(c, r)) return `${c},${r}`;
+  }
+  return null;
 }
 
 /**
