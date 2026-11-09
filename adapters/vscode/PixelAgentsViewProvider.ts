@@ -44,6 +44,7 @@ import {
   listDirectories,
 } from '../../server/src/directories.js';
 import { collectDirectorySuggestions } from '../../server/src/directorySuggestions.js';
+import { configureFigures } from '../../server/src/figures/index.js';
 import { setDirectoryNameResolver, setTerminalAdapter } from '../../server/src/fileWatcher.js';
 import type { LayoutWatcher } from '../../server/src/layoutPersistence.js';
 import {
@@ -871,6 +872,7 @@ export class PixelAgentsViewProvider implements vscode.WebviewViewProvider {
 
             console.log('[Extension] Using assetsRoot:', assetsRoot);
             this.assetsRoot = assetsRoot;
+            configureFigures(assetsRoot);
 
             // Load bundled default layout
             this.defaultLayout = loadDefaultLayout(assetsRoot);

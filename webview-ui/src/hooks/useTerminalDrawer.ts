@@ -202,7 +202,12 @@ export function useTerminalDrawer({
     (id: number): AgentAppearance => {
       const ch = getOfficeState().characters.get(id);
       return ch
-        ? { palette: ch.palette, hueShift: ch.hueShift, providerId: ch.providerId }
+        ? {
+            palette: ch.palette,
+            hueShift: ch.hueShift,
+            figure: ch.figure,
+            providerId: ch.providerId,
+          }
         : DEFAULT_APPEARANCE;
     },
     [getOfficeState],

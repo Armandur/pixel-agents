@@ -1,4 +1,5 @@
 import type { AgentStateStore } from './agentStateStore.js';
+import { figureSprites } from './figures/index.js';
 import { hasPromotedBackgroundAgent } from './teamUtils.js';
 
 /**
@@ -43,6 +44,9 @@ export function resendAgentActivity(
         crowned: !!agent.crowned,
       });
     }
+
+    const figure = agent.figureSeed ? figureSprites(agent.figureSeed) : null;
+    if (figure) send({ type: 'agentFigure', id, seed: agent.figureSeed!, sprites: figure });
 
     // 2. Regular (non-background) tools
     for (const [toolId, status] of agent.activeToolStatuses) {

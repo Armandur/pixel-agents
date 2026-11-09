@@ -14,6 +14,8 @@ import { Direction } from '../office/types.js';
 interface CharacterMugShotProps {
   palette: number;
   hueShift: number;
+  /** Generated figure seed, when the agent has one. */
+  figure?: string;
   /** On-screen side length in CSS px. Defaults to MUGSHOT_DISPLAY_PX. */
   size?: number;
 }
@@ -28,6 +30,7 @@ interface CharacterMugShotProps {
 export function CharacterMugShot({
   palette,
   hueShift,
+  figure,
   size = MUGSHOT_DISPLAY_PX,
 }: CharacterMugShotProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -38,7 +41,7 @@ export function CharacterMugShot({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const front = getCharacterSprites(palette, hueShift).walk[Direction.DOWN][0];
+    const front = getCharacterSprites(palette, hueShift, figure).walk[Direction.DOWN][0];
     const full = getCachedSprite(front, MUGSHOT_RENDER_ZOOM);
 
     const side = MUGSHOT_CROP_SIDE_PX * MUGSHOT_RENDER_ZOOM;
@@ -57,7 +60,7 @@ export function CharacterMugShot({
       side,
       side,
     );
-  }, [palette, hueShift]);
+  }, [palette, hueShift, figure]);
 
   return (
     <canvas

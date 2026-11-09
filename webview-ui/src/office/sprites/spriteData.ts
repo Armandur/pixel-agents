@@ -119,16 +119,35 @@ function emptySprite(w: number, h: number): SpriteData {
   return rows;
 }
 
-export function getCharacterSprites(paletteIndex: number, hueShift = 0): CharacterSprites {
-  const cacheKey = `${paletteIndex}:${hueShift}`;
+/** Generated per-agent figures (server/src/figures), keyed by seed. */
+const figureTemplates = new Map<string, LoadedCharacterData>();
+
+/** Register an agent's generated figure (an `agentFigure` message). */
+export function setFigureTemplate(seed: string, data: LoadedCharacterData): void {
+  figureTemplates.set(seed, data);
+  spriteCache.delete(`fig:${seed}`);
+}
+
+/**
+ * The sprites a character draws with: its own generated figure when it has
+ * one (no hue shift, the figure is already its own), else the shared palette
+ * character with its hue shift.
+ */
+export function getCharacterSprites(
+  paletteIndex: number,
+  hueShift = 0,
+  figure?: string,
+): CharacterSprites {
+  const fig = figure ? figureTemplates.get(figure) : undefined;
+  const cacheKey = fig ? `fig:${figure}` : `${paletteIndex}:${hueShift}`;
   const cached = spriteCache.get(cacheKey);
   if (cached) return cached;
 
   let sprites: CharacterSprites;
 
-  if (loadedCharacters) {
+  if (fig || loadedCharacters) {
     // Use pre-colored character sprites directly (no palette swapping)
-    const char = loadedCharacters[paletteIndex % loadedCharacters.length];
+    const char = fig ?? loadedCharacters![paletteIndex % loadedCharacters!.length];
     const d = char.down;
     const u = char.up;
     const rt = char.right;
@@ -181,8 +200,8 @@ export function getCharacterSprites(paletteIndex: number, hueShift = 0): Charact
     };
   }
 
-  // Apply hue shift if non-zero
-  if (hueShift !== 0) {
+  // Apply hue shift if non-zero (a generated figure carries its own colours)
+  if (hueShift !== 0 && !fig) {
     sprites = hueShiftSprites(sprites, hueShift);
   }
 

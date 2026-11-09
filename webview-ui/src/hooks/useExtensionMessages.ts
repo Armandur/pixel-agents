@@ -12,7 +12,7 @@ import { migrateLayoutColors } from '../office/layout/layoutSerializer.js';
 import type { QuotaInfo } from '../office/quotaFormat.js';
 import { setCarpetSprites } from '../office/sprites/carpetTiles.js';
 import { setPetTemplates } from '../office/sprites/petSpriteData.js';
-import { setCharacterTemplates } from '../office/sprites/spriteData.js';
+import { setCharacterTemplates, setFigureTemplate } from '../office/sprites/spriteData.js';
 import {
   extractToolName,
   isSubagentToolName,
@@ -196,6 +196,7 @@ export function useExtensionMessages(
   const [agentSeenActivity, setAgentSeenActivity] = useState<Record<number, boolean>>({});
   const [agentSessionNames, setAgentSessionNames] = useState<Record<number, string>>({});
   const [agentCrowned, setAgentCrowned] = useState<Record<number, boolean>>({});
+  const [, setAgentFigures] = useState<Record<number, string>>({});
   const [agentIdleSince, setAgentIdleSince] = useState<Record<number, number>>({});
   const [quotas, setQuotas] = useState<Record<string, QuotaInfo>>({});
   const markSeenActivity = (id: number) =>
@@ -714,6 +715,16 @@ export function useExtensionMessages(
         }>;
         console.log(`[Webview] Received ${characters.length} pre-colored character sprites`);
         setCharacterTemplates(characters);
+      } else if (msg.type === 'agentFigure') {
+        const id = msg.id as number;
+        const seed = msg.seed as string;
+        setFigureTemplate(
+          seed,
+          msg.sprites as { down: string[][][]; up: string[][][]; right: string[][][] },
+        );
+        os.setAgentFigure(id, seed);
+        // Re-render so the cards' mug shots pick the figure up.
+        setAgentFigures((prev) => (prev[id] === seed ? prev : { ...prev, [id]: seed }));
       } else if (msg.type === 'petSpritesLoaded') {
         const pets = msg.pets;
         if (!Array.isArray(pets)) {

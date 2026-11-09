@@ -101,6 +101,7 @@ components:
         # Context window
         - $ref: '#/components/schemas/AgentContextUsage'
         - $ref: '#/components/schemas/AgentSessionName'
+        - $ref: '#/components/schemas/AgentFigure'
         - $ref: '#/components/schemas/AgentIdleSince'
         - $ref: '#/components/schemas/AgentConversation'
         - $ref: '#/components/schemas/QuotaUpdate'
@@ -504,6 +505,27 @@ components:
           description: >-
             The session name is listed in the config's crownedSessions; the
             office draws the agent with a crown.
+
+    AgentFigure:
+      description: |
+        The agent's own generated character, composed from the Metro City
+        layers with its session name as seed. The seed is fixed the first
+        time the agent is seen with a name, so a later rename keeps the
+        figure. Sent when the figure is minted and re-sent on webviewReady;
+        absent agents keep the shared palette characters.
+      type: object
+      additionalProperties: false
+      required: [type, id, seed, sprites]
+      properties:
+        type:
+          const: agentFigure
+        id:
+          type: integer
+        seed:
+          type: string
+          description: The figure's seed (a session name), also its cache key in the webview.
+        sprites:
+          $ref: '#/components/schemas/CharacterSpriteSet'
 
     QuotaUpdate:
       description: |

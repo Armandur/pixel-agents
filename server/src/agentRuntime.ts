@@ -557,6 +557,7 @@ export class AgentRuntime {
         teamUsesTmux: p.teamUsesTmux,
         palette: p.palette,
         hueShift: p.hueShift,
+        figureSeed: p.figureSeed,
       });
 
       assignPaletteIfNeeded(agent, this.store);

@@ -26,6 +26,8 @@ export interface AgentState {
   sessionName?: string;
   /** Its session name is listed in config crownedSessions (drawn with a crown). */
   crowned?: boolean;
+  /** Seed of its generated figure: the session name as first seen. Persisted. */
+  figureSeed?: string;
   /** Epoch ms since the agent went idle (waiting or done); undefined while working. Not persisted. */
   idleSince?: number;
   /** Timestamp of last JSONL data received (ms since epoch) */
@@ -125,4 +127,6 @@ export interface PersistedAgent {
   palette?: number;
   /** Hue shift in degrees (0-360). Persisted alongside palette. */
   hueShift?: number;
+  /** Seed of the agent's generated figure (server/src/figures), fixed at first sight. */
+  figureSeed?: string;
 }

@@ -270,6 +270,8 @@ export interface Character {
   isTeamLead?: boolean;
   /** Session name is listed in config crownedSessions: drawn with a crown. */
   crowned?: boolean;
+  /** Seed of its generated figure (getCharacterSprites); absent = palette character. */
+  figure?: string;
   /** Walking over to another agent to deliver a message (replaces the FSM). */
   visit?: Visit;
   /** Further messages waiting for the current visit to end. */

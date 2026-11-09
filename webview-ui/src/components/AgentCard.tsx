@@ -8,6 +8,8 @@ import { Button } from './ui/Button.js';
 export interface AgentAppearance {
   palette: number;
   hueShift: number;
+  /** Generated figure seed, when the agent has one. */
+  figure?: string;
   /** Hook provider ('codex' gets a badge). Undefined means claude. */
   providerId?: string;
 }
@@ -91,7 +93,11 @@ export function AgentCard({
       title={badge ? `Agent ${agentId} (${badge.label})` : `Agent ${agentId}`}
     >
       <div className="relative shrink-0">
-        <CharacterMugShot palette={appearance.palette} hueShift={appearance.hueShift} />
+        <CharacterMugShot
+          palette={appearance.palette}
+          hueShift={appearance.hueShift}
+          figure={appearance.figure}
+        />
         {/* Mobile's mug-shot-only cards mark the provider with a small
             colour square; desktop cards carry it beside the name instead,
             where it covers nothing. */}

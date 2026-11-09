@@ -99,6 +99,8 @@ export class OfficeState {
   private readonly crownedAgentIds = new Set<number>();
   /** Session names by agent id, for seats kept for a name (seatOwners.ts). */
   private readonly sessionNames = new Map<number, string>();
+  /** Generated figure seed by agent id; may arrive before the character. */
+  private readonly figureById = new Map<number, string>();
   /** Epoch ms each idle agent went idle (agentIdleSince); absent = working. */
   private readonly idleSinceById = new Map<number, number>();
   /** Lounge tile keys, cached per layout object (see loungeKeys()). */
@@ -559,6 +561,7 @@ export class OfficeState {
       startMatrixEffect(ch, 'spawn');
     }
     ch.crowned = this.crownedAgentIds.has(id);
+    ch.figure = this.figureById.get(id);
     this.characters.set(id, ch);
     this.claimOwnedSeat(id);
   }
@@ -803,6 +806,7 @@ export class OfficeState {
     if (parentCh) ch.dir = parentCh.dir;
     ch.isSubagent = true;
     ch.parentAgentId = parentAgentId;
+    ch.figure = parentCh?.figure;
     // Standing, not the character default TYPE: TYPE on the spawn tile is the
     // sitting pose on bare floor, and an active TYPE never stands up again.
     ch.state = CharacterState.IDLE;
@@ -1375,6 +1379,14 @@ export class OfficeState {
       if (other) this.reassignSeat(sitter.id, other);
     }
     return ownersOld && !this.seats.get(ownersOld)?.assigned ? ownersOld : null;
+  }
+
+  /** An agent's generated figure arrived: it and its sub-agents draw with it. */
+  setAgentFigure(id: number, seed: string): void {
+    this.figureById.set(id, seed);
+    for (const ch of this.characters.values()) {
+      if (ch.id === id || (ch.isSubagent && ch.parentAgentId === id)) ch.figure = seed;
+    }
   }
 
   setAgentCrowned(id: number, crowned: boolean): void {

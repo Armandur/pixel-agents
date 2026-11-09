@@ -31,6 +31,7 @@ import {
   TERMINAL_DISABLED_BY_FLAG_REASON,
   WILDCARD_HOSTNAMES,
 } from './constants.js';
+import { configureFigures } from './figures/index.js';
 import { FileStateAdapter } from './fileStateAdapter.js';
 import { claudeProvider, copyHookScript, hookProviderById } from './providers/index.js';
 import { PixelAgentsServer } from './server.js';
@@ -218,6 +219,7 @@ async function main(): Promise<void> {
     distRoot,
     readConfig().externalAssetDirectories,
   );
+  configureFigures(distRoot);
   const charCount = assetCache.characters?.characters.length ?? 0;
   const petCount = assetCache.pets?.pets.length ?? 0;
   const furnitureCount = assetCache.furniture?.catalog.length ?? 0;

@@ -1,5 +1,6 @@
 import type { HookProvider } from '../../core/src/provider.js';
 import type { AgentStateStore } from './agentStateStore.js';
+import { mintFigure } from './figures/index.js';
 
 /**
  * Copy each provider's session names onto its agents, broadcasting
@@ -20,15 +21,19 @@ export function refreshSessionNames(
     if (names) byProvider.set(provider.id, names);
   }
   if (byProvider.size === 0) return;
+  let minted = false;
 
   for (const [id, agent] of store) {
     const name =
       byProvider.get(agent.providerId ?? 'claude')?.get(agent.sessionId) ?? agent.sessionName;
     if (!name) continue;
     const isCrowned = crowned.has(name.toLowerCase());
-    if (name === agent.sessionName && isCrowned === !!agent.crowned) continue;
-    agent.sessionName = name;
-    agent.crowned = isCrowned;
-    store.broadcast({ type: 'agentSessionName', id, sessionName: name, crowned: isCrowned });
+    if (name !== agent.sessionName || isCrowned !== !!agent.crowned) {
+      agent.sessionName = name;
+      agent.crowned = isCrowned;
+      store.broadcast({ type: 'agentSessionName', id, sessionName: name, crowned: isCrowned });
+    }
+    if (mintFigure(store, id, agent)) minted = true;
   }
+  if (minted) store.persist();
 }

@@ -26,6 +26,7 @@ export type ServerMessage =
   | AgentTeamInfo
   | AgentContextUsage
   | AgentSessionName
+  | AgentFigure
   | AgentIdleSince
   | AgentConversation
   | QuotaUpdate
@@ -215,6 +216,19 @@ export interface AgentSessionName {
   crowned?: boolean;
 }
 
+export interface AgentFigure {
+  type: 'agentFigure';
+  id: number;
+  seed: string;
+  sprites: CharacterSpriteSet;
+}
+
+export interface CharacterSpriteSet {
+  down: string[][][];
+  up: string[][][];
+  right: string[][][];
+}
+
 export interface AgentIdleSince {
   type: 'agentIdleSince';
   id: number;
@@ -295,12 +309,6 @@ export type PlayDirection = 'up' | 'down' | 'left' | 'right';
 export interface CharacterSpritesLoaded {
   type: 'characterSpritesLoaded';
   characters: CharacterSpriteSet[];
-}
-
-export interface CharacterSpriteSet {
-  down: string[][][];
-  up: string[][][];
-  right: string[][][];
 }
 
 export interface PetSpritesLoaded {
