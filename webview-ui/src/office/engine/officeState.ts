@@ -38,7 +38,7 @@ import type {
   TileType as TileTypeVal,
 } from '../types.js';
 import { CharacterState, Direction, PetState, TILE_SIZE } from '../types.js';
-import { collectAutoOnTiles } from './autoState.js';
+import { animationFrameFor, collectAutoOnTiles } from './autoState.js';
 import { createCharacter, updateCharacter, walkFrame } from './characters.js';
 import type { VisitRequest } from './conversation.js';
 import { advanceVisit, beginVisit, requestVisit, visitDestination } from './conversation.js';
@@ -51,6 +51,8 @@ import {
   releasePartner,
   wantsLounge,
 } from './lounge.js';
+import type { LoungeGame } from './loungePlay.js';
+import { gamesInLayout, litGameTiles } from './loungePlay.js';
 import { advanceMatrixEffect, startMatrixEffect } from './matrixEffectState.js';
 import { createPet, updatePet } from './petEntity.js';
 import { anchorTile, closestFreeSeat } from './seatPlacement.js';
@@ -98,6 +100,8 @@ export class OfficeState {
   private readonly idleSinceById = new Map<number, number>();
   /** Lounge tile keys, cached per layout object (see loungeKeys()). */
   private loungeCache: { layout: OfficeLayout; keys: Set<string> } | null = null;
+  /** Placed games, cached per layout object (see loungeGames()). */
+  private gamesCache: { layout: OfficeLayout; games: LoungeGame[] } | null = null;
   hoveredTile: { col: number; row: number } | null = null;
   /** Maps "parentId:toolId" → sub-agent character ID (negative) */
   subagentIdMap: Map<string, number> = new Map();
@@ -895,6 +899,10 @@ export class OfficeState {
     const autoOnTiles = collectAutoOnTiles(this.characters.values(), this.seats, (id) =>
       this.idleSinceById.has(id),
     );
+    // ...and a lounge game lights up while its players are at it
+    for (const tile of litGameTiles(this.characters.values(), this.loungeGames())) {
+      autoOnTiles.add(tile);
+    }
 
     if (autoOnTiles.size === 0) {
       this.furniture = layoutToFurnitureInstances(this.layout.furniture);
@@ -915,7 +923,7 @@ export class OfficeState {
               // Check if the on-state type has animation frames
               const frames = getAnimationFrames(onType);
               if (frames && frames.length > 1) {
-                const frameIdx = animFrame % frames.length;
+                const frameIdx = animationFrameFor(item.uid, animFrame, frames.length);
                 onType = frames[frameIdx];
               }
               return { ...item, type: onType };
@@ -1275,9 +1283,17 @@ export class OfficeState {
   }
 
   /** The map, as the lounge rules see it (see planLoungeActivity). */
+  private loungeGames(): LoungeGame[] {
+    if (this.gamesCache?.layout !== this.layout) {
+      this.gamesCache = { layout: this.layout, games: gamesInLayout(this.layout.furniture) };
+    }
+    return this.gamesCache.games;
+  }
+
   private loungeContext(): LoungeContext {
     return {
       keys: this.loungeKeys(),
+      games: this.loungeGames(),
       characters: this.characters.values(),
       seats: this.seats.values(),
       walkableTiles: this.walkableTiles,

@@ -50,3 +50,15 @@ export function collectAutoOnTiles(
   }
   return tiles;
 }
+
+/**
+ * Which frame of an ON animation a placed item shows: the shared clock,
+ * shifted by a stable per-item offset (from its uid). Two arcade machines
+ * side by side then sit at different points of a long multi-game loop
+ * instead of playing the same game in lockstep.
+ */
+export function animationFrameFor(uid: string, clockFrame: number, frameCount: number): number {
+  let h = 2166136261;
+  for (let i = 0; i < uid.length; i++) h = Math.imul(h ^ uid.charCodeAt(i), 16777619);
+  return (((clockFrame + (h >>> 0)) % frameCount) + frameCount) % frameCount;
+}

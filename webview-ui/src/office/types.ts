@@ -120,6 +120,9 @@ export interface FurnitureCatalogEntry {
   tags?: string[];
   /** Painted as joined 1x1 tiles (see office/layout/autoTile.ts). */
   autoTile?: boolean;
+  /** A game idle agents play (see office/engine/loungePlay.ts). */
+  playSpots?: Array<{ dc: number; dr: number; dir: 'up' | 'down' | 'left' | 'right' }>;
+  minPlayers?: number;
 }
 
 export interface PlacedFurniture {

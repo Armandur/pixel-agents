@@ -11,6 +11,8 @@ import {
 import type { Character, OfficeLayout, Seat } from '../types.js';
 import { CharacterState } from '../types.js';
 import { facingToward } from './conversation.js';
+import type { LoungeGame, PlaySpotTile } from './loungePlay.js';
+import { arriveAtGame, partnerQuit, playableGames } from './loungePlay.js';
 
 /**
  * The lounge ("fikarummet"): agents idle long enough leave their desk for an
@@ -19,7 +21,7 @@ import { facingToward } from './conversation.js';
  * head back to their own seat. Pure rules; OfficeState supplies the map.
  */
 
-export type LoungeActivity = 'sit' | 'stroll' | 'mingle';
+export type LoungeActivity = 'sit' | 'stroll' | 'mingle' | 'play';
 
 /** The pretend chat of a mingle: who "speaks" now and what the bubble says. */
 export interface LoungeChat {
@@ -35,8 +37,11 @@ export interface LoungeState {
   activity: LoungeActivity;
   /** Lounge seat it is heading to or sits on (a temporary claim, not its seatId). */
   seatUid?: string;
-  /** Who it went to stand with (mingle). */
+  /** Who it went to stand with (mingle), or plays against (play). */
   partnerId?: number;
+  /** Play: the game's uid and the spot this player stands on. */
+  gameUid?: string;
+  spot?: PlaySpotTile;
   /** Seconds left of sitting/standing once arrived. */
   timer: number;
   /** Mingle only: the simulated chat, owned by the character that walked up. */
@@ -75,13 +80,14 @@ export function wantsLounge(ch: Character, idleSince: number | undefined, now: n
 
 /** Pick the next activity among those possible: sitting is the favourite. */
 export function chooseActivity(
-  possible: { sit: boolean; stroll: boolean; mingle: boolean },
+  possible: { sit: boolean; stroll: boolean; mingle: boolean; play?: boolean },
   random: () => number,
 ): LoungeActivity | null {
   const weighted: Array<[LoungeActivity, number]> = [
     ['sit', possible.sit ? 5 : 0],
     ['stroll', possible.stroll ? 3 : 0],
     ['mingle', possible.mingle ? 2 : 0],
+    ['play', possible.play ? 3 : 0],
   ];
   const total = weighted.reduce((sum, [, w]) => sum + w, 0);
   if (total === 0) return null;
@@ -153,7 +159,7 @@ export function loungeChatLines(characters: Iterable<Character>): Map<number, st
 export function beginLounge(
   ch: Character,
   activity: LoungeActivity,
-  extra: { seatUid?: string; partnerId?: number } = {},
+  extra: { seatUid?: string; partnerId?: number; gameUid?: string; spot?: PlaySpotTile } = {},
 ): void {
   ch.lounge = { phase: 'walking', activity, timer: 0, ...extra };
   ch.state = ch.path.length > 0 ? CharacterState.WALK : CharacterState.IDLE;
@@ -185,6 +191,10 @@ export function advanceLounge(
     }
     lounge.phase = 'resting';
     ch.frame = 0;
+    if (lounge.activity === 'play') {
+      arriveAtGame(ch, partner, random);
+      return 'resting';
+    }
     const seat = lounge.seatUid ? seats.get(lounge.seatUid) : undefined;
     if (seat && ch.tileCol === seat.seatCol && ch.tileRow === seat.seatRow) {
       ch.state = CharacterState.TYPE;
@@ -208,6 +218,7 @@ export function advanceLounge(
     }
     return 'resting';
   }
+  if (partnerQuit(ch, partner)) return 'next';
   lounge.timer -= dt;
   if (lounge.chat && partner) advanceLoungeChat(lounge.chat, ch.id, partner.id, dt, random);
   if (lounge.timer > 0) return 'resting';
@@ -253,6 +264,8 @@ export interface LoungeContext {
   pathTo: (ch: Character, col: number, row: number) => Array<{ col: number; row: number }>;
   /** Closest free walkable tile beside (col,row), never on it. */
   freeTileBeside: (col: number, row: number) => { col: number; row: number } | null;
+  /** Placed games (see loungePlay.ts); absent = none. */
+  games?: LoungeGame[];
 }
 
 /**
@@ -269,9 +282,11 @@ export function planLoungeActivity(
   const occupied = new Set<string>();
   const claimed = new Set<string>();
   const partners: Character[] = [];
+  const inUse = new Set<string>();
   for (const other of ctx.characters) {
     if (other.id === ch.id) continue;
     occupied.add(`${other.tileCol},${other.tileRow}`);
+    if (other.lounge?.gameUid) inUse.add(other.lounge.gameUid);
     if (other.lounge?.seatUid) claimed.add(other.lounge.seatUid);
     if (other.lounge) partners.push(other);
   }
@@ -282,10 +297,26 @@ export function planLoungeActivity(
     (t) => ctx.keys.has(`${t.col},${t.row}`) && !occupied.has(`${t.col},${t.row}`),
   );
   const pick = <T>(xs: T[]): T => xs[Math.floor(random() * xs.length)];
+  const standable = new Set(freeTiles.map((t) => `${t.col},${t.row}`));
+  const canStand = (col: number, row: number) => standable.has(`${col},${row}`);
+  // Someone to play against: a lounger not already at a game or on a visit.
+  const opponents = partners.filter((p) => !p.lounge?.gameUid && !p.visit);
+  const games = playableGames(ctx.games ?? [], canStand, inUse).filter(
+    (g) => g.minPlayers < 2 || opponents.length > 0,
+  );
   const activity = chooseActivity(
-    { sit: freeSeats.length > 0, stroll: freeTiles.length > 0, mingle: partners.length > 0 },
+    {
+      sit: freeSeats.length > 0,
+      stroll: freeTiles.length > 0,
+      mingle: partners.length > 0,
+      play: games.length > 0,
+    },
     random,
   );
+
+  if (activity === 'play' && startGame(ch, pick(games), opponents, canStand, ctx, pick, random)) {
+    return true;
+  }
 
   if (activity === 'sit') {
     const seat = pick(freeSeats);
@@ -311,4 +342,38 @@ export function planLoungeActivity(
     return true;
   }
   return false;
+}
+
+/**
+ * Send `ch` (and, for a two-player game, a recruited opponent) to the game's
+ * free spots. A game for one or two (the wide arcade) gets a second player
+ * half the time when someone is free. The opponent drops whatever it was
+ * doing in the lounge; its seat claim goes with its old lounge state.
+ */
+function startGame(
+  ch: Character,
+  game: LoungeGame,
+  opponents: Character[],
+  canStand: (col: number, row: number) => boolean,
+  ctx: LoungeContext,
+  pick: <T>(xs: T[]) => T,
+  random: () => number,
+): boolean {
+  const spots = game.spots.filter((s) => canStand(s.col, s.row));
+  const path = ctx.pathTo(ch, spots[0].col, spots[0].row);
+  if (path.length === 0) return false;
+  const duo = game.minPlayers >= 2 || (spots.length >= 2 && opponents.length > 0 && random() < 0.5);
+  if (!duo) {
+    ch.path = path;
+    beginLounge(ch, 'play', { gameUid: game.uid, spot: spots[0] });
+    return true;
+  }
+  const opponent = pick(opponents);
+  const opponentPath = ctx.pathTo(opponent, spots[1].col, spots[1].row);
+  if (opponentPath.length === 0) return false;
+  ch.path = path;
+  beginLounge(ch, 'play', { gameUid: game.uid, spot: spots[0], partnerId: opponent.id });
+  opponent.path = opponentPath;
+  beginLounge(opponent, 'play', { gameUid: game.uid, spot: spots[1], partnerId: ch.id });
+  return true;
 }

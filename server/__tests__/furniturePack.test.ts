@@ -79,4 +79,21 @@ describe('loadFurnitureAssets keeps a manifest pack and tags', () => {
     expect(red('CTR#14')).toBe(14);
     expect(loaded!.sprites.get('CTR#0')).toHaveLength(16);
   });
+
+  it('keeps well-formed play spots and a sane minPlayers, drops the rest', async () => {
+    item('GAME', {
+      playSpots: [
+        { dc: 0, dr: 2, dir: 'up' },
+        { dc: 1, dr: 2, dir: 'sideways' },
+        { dc: 0.5, dr: 1, dir: 'up' },
+      ],
+      minPlayers: 2,
+    });
+    item('ODD', { playSpots: 'yes' });
+    const loaded = await loadFurnitureAssets(root);
+    const byId = new Map(loaded!.catalog.map((a) => [a.id, a]));
+    expect(byId.get('GAME')!.playSpots).toEqual([{ dc: 0, dr: 2, dir: 'up' }]);
+    expect(byId.get('GAME')).not.toHaveProperty('minPlayers'); // 2 players, 1 usable spot
+    expect(byId.get('ODD')).not.toHaveProperty('playSpots');
+  });
 });

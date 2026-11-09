@@ -276,11 +276,21 @@ export interface FurnitureAssetMessage {
   mirrorSide?: boolean;
   pack?: string;
   tags?: string[];
+  playSpots?: PlaySpot[];
+  minPlayers?: number;
   autoTile?: boolean;
   rotationScheme?: string;
   animationGroup?: string;
   frame?: number;
 }
+
+export interface PlaySpot {
+  dc: number;
+  dr: number;
+  dir: PlayDirection;
+}
+
+export type PlayDirection = 'up' | 'down' | 'left' | 'right';
 
 export interface CharacterSpritesLoaded {
   type: 'characterSpritesLoaded';

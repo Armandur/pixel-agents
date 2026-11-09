@@ -20,6 +20,7 @@ import type {
   FurnitureManifest,
   InheritedProps,
   ManifestGroup,
+  PlaySpot,
 } from '../../core/src/assets/manifestUtils.js';
 import {
   AUTO_TILE_PIECE_PX,
@@ -60,17 +61,36 @@ export function mergeLoadedAssets(a: LoadedAssets, b: LoadedAssets): LoadedAsset
   };
 }
 
-/** A manifest's optional pack and tags, kept only when well-formed (they
- *  come from hand-written or third-party manifests). */
-function packAndTags(manifest: { pack?: unknown; tags?: unknown }): {
-  pack?: string;
-  tags?: string[];
-} {
-  const out: { pack?: string; tags?: string[] } = {};
+const PLAY_DIRS = new Set(['up', 'down', 'left', 'right']);
+
+/** A manifest's optional pack, tags and play spots, kept only when
+ *  well-formed (they come from hand-written or third-party manifests). */
+function packAndTags(manifest: {
+  pack?: unknown;
+  tags?: unknown;
+  playSpots?: unknown;
+  minPlayers?: unknown;
+}): { pack?: string; tags?: string[]; playSpots?: PlaySpot[]; minPlayers?: number } {
+  const out: { pack?: string; tags?: string[]; playSpots?: PlaySpot[]; minPlayers?: number } = {};
   if (typeof manifest.pack === 'string' && manifest.pack) out.pack = manifest.pack;
   if (Array.isArray(manifest.tags)) {
     const tags = manifest.tags.filter((t): t is string => typeof t === 'string' && t !== '');
     if (tags.length) out.tags = tags;
+  }
+  if (Array.isArray(manifest.playSpots)) {
+    const spots = manifest.playSpots.filter(
+      (s): s is PlaySpot =>
+        !!s &&
+        Number.isInteger(s.dc) &&
+        Number.isInteger(s.dr) &&
+        typeof s.dir === 'string' &&
+        PLAY_DIRS.has(s.dir),
+    );
+    if (spots.length) out.playSpots = spots.map(({ dc, dr, dir }) => ({ dc, dr, dir }));
+  }
+  if (out.playSpots && Number.isInteger(manifest.minPlayers)) {
+    const n = manifest.minPlayers as number;
+    if (n >= 1 && n <= out.playSpots.length) out.minPlayers = n;
   }
   return out;
 }

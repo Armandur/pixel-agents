@@ -1541,6 +1541,22 @@ components:
               items:
                 type: string
 
+    PlayDirection:
+      type: string
+      enum: [up, down, left, right]
+
+    PlaySpot:
+      type: object
+      additionalProperties: false
+      required: [dc, dr, dir]
+      properties:
+        dc:
+          type: integer
+        dr:
+          type: integer
+        dir:
+          $ref: '#/components/schemas/PlayDirection'
+
     FurnitureAssetMessage:
       description: One entry in the furniture catalog (sent in `furnitureAssetsLoaded`).
       type: object
@@ -1600,6 +1616,14 @@ components:
           items:
             type: string
           description: Free search tags from the manifest.
+        playSpots:
+          type: array
+          description: A game idle agents can play - where each player stands, relative to the item's top-left tile, and which way it faces.
+          items:
+            $ref: '#/components/schemas/PlaySpot'
+        minPlayers:
+          type: integer
+          description: Players needed to start the game (default 1).
         autoTile:
           type: boolean
           description: A 1x1 item that joins with same-type neighbours; its pieces arrive as sprites `<id>#<mask>` (N=1, E=2, S=4, W=8).

@@ -24,6 +24,8 @@ export interface LoadedAssetData {
     pack?: string;
     tags?: string[];
     autoTile?: boolean;
+    playSpots?: Array<{ dc: number; dr: number; dir: 'up' | 'down' | 'left' | 'right' }>;
+    minPlayers?: number;
   }>;
   sprites: Record<string, SpriteData>;
 }
@@ -99,6 +101,8 @@ export function buildDynamicCatalog(assets: LoadedAssetData): boolean {
         ...(asset.pack ? { pack: asset.pack } : {}),
         ...(asset.tags?.length ? { tags: asset.tags } : {}),
         ...(asset.autoTile ? { autoTile: true } : {}),
+        ...(asset.playSpots?.length ? { playSpots: asset.playSpots } : {}),
+        ...(asset.minPlayers ? { minPlayers: asset.minPlayers } : {}),
       };
     })
     .filter((e): e is CatalogEntryWithCategory => e !== null);

@@ -43,6 +43,11 @@ export interface FurnitureManifest {
   pack?: string;
   /** Free search tags ("kök", "fikarum"). */
   tags?: string[];
+  /** A game idle agents can play: where each player stands (relative to the
+   *  item's top-left tile) and which way it faces. */
+  playSpots?: PlaySpot[];
+  /** Players needed to start (default 1). */
+  minPlayers?: number;
   // If type is 'asset', these fields are present:
   /** 'autotile': `file` is a 4x4 sheet of 16x16 pieces, piece index = neighbour
    *  mask (N=1, E=2, S=4, W=8, row-major), placed as 1x1 items that join up. */
@@ -58,6 +63,12 @@ export interface FurnitureManifest {
   members?: ManifestNode[];
 }
 
+export interface PlaySpot {
+  dc: number;
+  dr: number;
+  dir: 'up' | 'down' | 'left' | 'right';
+}
+
 export interface InheritedProps {
   groupId: string;
   name: string;
@@ -71,6 +82,8 @@ export interface InheritedProps {
   animationGroup?: string;
   pack?: string;
   tags?: string[];
+  playSpots?: PlaySpot[];
+  minPlayers?: number;
 }
 
 export interface FurnitureAsset {
@@ -96,6 +109,8 @@ export interface FurnitureAsset {
   frame?: number;
   pack?: string;
   tags?: string[];
+  playSpots?: PlaySpot[];
+  minPlayers?: number;
   /** Joins with same-type neighbours; sprites `${id}#${mask}` carry the pieces. */
   autoTile?: boolean;
 }
@@ -147,6 +162,8 @@ export function flattenManifest(node: ManifestNode, inherited: InheritedProps): 
         ...(asset.frame !== undefined ? { frame: asset.frame } : {}),
         ...(inherited.pack ? { pack: inherited.pack } : {}),
         ...(inherited.tags?.length ? { tags: inherited.tags } : {}),
+        ...(inherited.playSpots ? { playSpots: inherited.playSpots } : {}),
+        ...(inherited.minPlayers ? { minPlayers: inherited.minPlayers } : {}),
       },
     ];
   }

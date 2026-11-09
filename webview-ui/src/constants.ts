@@ -86,6 +86,11 @@ export const LOUNGE_SIT_MAX_SEC = 90;
 /** How long it stands (strolling or with another agent) before moving on. */
 export const LOUNGE_STAND_MIN_SEC = 8;
 export const LOUNGE_STAND_MAX_SEC = 20;
+/** A game in the lounge: how long a round lasts, and how long the first
+ *  player of a two-player game waits at the table for the other. */
+export const LOUNGE_PLAY_MIN_SEC = 25;
+export const LOUNGE_PLAY_MAX_SEC = 60;
+export const LOUNGE_PLAY_WAIT_MAX_SEC = 20;
 /** Seconds one side of a mingle "talks" before the other takes the turn. */
 export const LOUNGE_CHAT_TURN_MIN_SEC = 3;
 export const LOUNGE_CHAT_TURN_MAX_SEC = 5;

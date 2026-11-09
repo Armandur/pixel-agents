@@ -20,7 +20,7 @@ declare global {
         tileRow: number;
         visitPhase?: 'going' | 'talking';
         isActive: boolean;
-        loungeActivity?: 'sit' | 'stroll' | 'mingle';
+        loungeActivity?: 'sit' | 'stroll' | 'mingle' | 'play';
       }>;
       /** The character the camera follows (null = free camera). */
       getCameraFollowId?: () => number | null;
