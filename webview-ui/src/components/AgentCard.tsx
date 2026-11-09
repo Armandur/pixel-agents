@@ -1,4 +1,7 @@
+import { useContext } from 'react';
+
 import { ACHIEVEMENT_LABELS, CROWNED_NAME_COLOR, providerBadge } from '../constants.js';
+import { AgentProgressContext } from './agentProgressContext.js';
 import type { CardVariant, SubagentRef } from './cardBar.js';
 import { subagentRow } from './cardBar.js';
 import { CharacterMugShot } from './CharacterMugShot.js';
@@ -92,6 +95,8 @@ export function AgentCard({
 }: AgentCardProps) {
   const subRow = subagentRow(subagents);
   const badge = providerBadge(appearance.providerId);
+  const progressCtx = useContext(AgentProgressContext);
+  const mobileLevel = label ? undefined : progressCtx?.progress[agentId]?.level;
   return (
     <div
       className={`pointer-events-auto flex items-stretch gap-1 p-1 cursor-pointer border-2 shrink-0 ${label ? 'w-full' : ''} ${CARD_VARIANT[variant]}`}
@@ -115,6 +120,21 @@ export function AgentCard({
             style={{ background: badge.fill, borderColor: badge.border }}
             aria-label={badge.label}
           />
+        )}
+        {mobileLevel !== undefined && (
+          <button
+            type="button"
+            className="absolute top-0 right-0 bg-gold text-bg text-2xs leading-none px-3 py-1 border-0 rounded-none cursor-pointer"
+            data-testid="agent-card-level-mobile"
+            aria-label={`Nivå ${mobileLevel}, visa achievements`}
+            onClick={(e) => {
+              e.stopPropagation();
+              progressCtx?.open(agentId);
+            }}
+            onTouchStart={(e) => e.stopPropagation()}
+          >
+            {mobileLevel}
+          </button>
         )}
       </div>
       {label && (
@@ -142,9 +162,14 @@ export function AgentCard({
             )}
             {label.level && (
               <span
-                className="ml-auto shrink-0 bg-gold text-bg text-2xs leading-none px-4 py-1"
+                className="ml-auto shrink-0 bg-gold text-bg text-2xs leading-none px-4 py-1 cursor-pointer"
                 data-testid="agent-card-level"
                 title={levelTitle(label.level)}
+                onClick={(e) => {
+                  // Open the panel, not this card's tab.
+                  e.stopPropagation();
+                  progressCtx?.open(agentId);
+                }}
               >
                 Lvl {label.level.level}
               </span>
