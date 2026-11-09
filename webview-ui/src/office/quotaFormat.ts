@@ -146,3 +146,75 @@ export function quotaBars(info: QuotaInfo | undefined, nowSec: number): QuotaBar
     };
   });
 }
+
+/** Panel width in CSS px (shrinks to fit a narrow office), edge margin and the
+ *  height the placement reserves before the panel is measured. */
+export const QUOTA_PANEL_WIDTH_PX = 260;
+export const QUOTA_PANEL_MARGIN_PX = 8;
+export const QUOTA_PANEL_HEIGHT_PX = 190;
+
+/** "för 5 min sedan", "för 2 h sedan", "för 3 d sedan"; "nyss" under a minute. */
+export function formatAge(secondsAgo: number): string {
+  const minutes = Math.floor(Math.max(0, secondsAgo) / 60);
+  if (minutes < 1) return 'nyss';
+  if (minutes < 60) return `för ${minutes} min sedan`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `för ${hours} h sedan`;
+  return `för ${Math.floor(hours / 24)} d sedan`;
+}
+
+/** One window of the detail panel. `percent` is undefined when unknown. */
+export interface QuotaPanelWindow {
+  label: QuotaRow['label'];
+  level: QuotaLevel;
+  /** "63 %" or the reason there is no number. */
+  value: string;
+  percent?: number;
+  /** "om 2 h 14 min" and "21:40" / "tors 17:10"; empty when unknown. */
+  relative: string;
+  clock: string;
+  cellColors: string[];
+}
+
+export function quotaPanelWindows(info: QuotaInfo | undefined, nowSec: number): QuotaPanelWindow[] {
+  const bars = quotaBars(info, nowSec);
+  return quotaRows(info, nowSec).map((row, i) => {
+    const w = info?.windows.find((x) => (x.id === '5h' ? '5 h' : '7 d') === row.label);
+    const known = row.level !== 'unknown' && w !== undefined;
+    return {
+      label: row.label,
+      level: row.level,
+      value: row.value,
+      percent: known ? w.usedPercent : undefined,
+      relative: known ? formatRelative(w.resetsAt - nowSec) : '',
+      clock: known ? formatClock(w.resetsAt, nowSec) : '',
+      cellColors: bars[i].cellColors,
+    };
+  });
+}
+
+/** When the numbers were taken ("uppdaterad för 5 min sedan"); undefined with no data. */
+export function quotaUpdatedText(info: QuotaInfo | undefined, nowSec: number): string | undefined {
+  if (!info || !Number.isFinite(info.capturedAt)) return undefined;
+  return `uppdaterad ${formatAge(nowSec - info.capturedAt)}`;
+}
+
+/** Top-left of a panel under (or, when it does not fit, over) an anchor box,
+ *  kept inside the bounds with the margin on every side. */
+export function placeQuotaPanel(
+  anchor: { left: number; top: number; width: number; height: number },
+  panel: { width: number; height: number },
+  bounds: { width: number; height: number },
+): { left: number; top: number } {
+  const m = QUOTA_PANEL_MARGIN_PX;
+  const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(v, Math.max(lo, hi)));
+  const left = clamp(
+    anchor.left + anchor.width / 2 - panel.width / 2,
+    m,
+    bounds.width - panel.width - m,
+  );
+  const below = anchor.top + anchor.height + m;
+  const above = anchor.top - panel.height - m;
+  const top = below + panel.height + m <= bounds.height || above < m ? below : above;
+  return { left, top: clamp(top, m, bounds.height - panel.height - m) };
+}

@@ -2,15 +2,19 @@ import { describe, expect, it } from 'vitest';
 
 import { QUOTA_BAR_EMPTY, QUOTA_BAR_RAMP } from '../src/constants.js';
 import {
+  formatAge,
   formatClock,
   formatPercent,
   formatRelative,
   formatReset,
+  placeQuotaPanel,
   quotaBars,
   type QuotaInfo,
   quotaLevel,
+  quotaPanelWindows,
   quotaRows,
   quotaTitle,
+  quotaUpdatedText,
 } from '../src/office/quotaFormat.js';
 
 /** Epoch seconds for a LOCAL date, so clock assertions hold in any timezone. */
@@ -153,5 +157,53 @@ describe('quotaBars', () => {
     const [five] = quotaBars(info([{ id: '7d', usedPercent: 20, resetsAt: now + 86400 }]), now);
     expect(five.filled).toBe(0);
     expect(five.title).toBe('5 h saknas');
+  });
+});
+
+describe('quota panel helpers', () => {
+  const now = local(2026, 11, 9, 19, 26);
+  const info: QuotaInfo = {
+    windows: [
+      { id: '5h', usedPercent: 63, resetsAt: now + 2 * 3600 + 14 * 60 },
+      { id: '7d', usedPercent: 10, resetsAt: now - 5 },
+    ],
+    capturedAt: now - 300,
+    stale: false,
+  };
+
+  it('formatAge reads minutes, hours, days and nyss', () => {
+    expect(formatAge(20)).toBe('nyss');
+    expect(formatAge(300)).toBe('för 5 min sedan');
+    expect(formatAge(2 * 3600 + 60)).toBe('för 2 h sedan');
+    expect(formatAge(3 * 86400)).toBe('för 3 d sedan');
+  });
+
+  it('quotaPanelWindows splits relative and clock, expired window is unknown', () => {
+    const [h5, d7] = quotaPanelWindows(info, now);
+    expect(h5).toMatchObject({
+      value: '63 %',
+      percent: 63,
+      relative: 'om 2 h 14 min',
+      clock: '21:40',
+    });
+    expect(d7).toMatchObject({ level: 'unknown', relative: '', clock: '' });
+    expect(d7.percent).toBeUndefined();
+  });
+
+  it('quotaUpdatedText is undefined without data', () => {
+    expect(quotaUpdatedText(undefined, now)).toBeUndefined();
+    expect(quotaUpdatedText(info, now)).toBe('uppdaterad för 5 min sedan');
+  });
+
+  it('placeQuotaPanel centres under the anchor and clamps to the bounds (390 px)', () => {
+    const panel = { width: 260, height: 190 };
+    const bounds = { width: 390, height: 600 };
+    const mid = placeQuotaPanel({ left: 150, top: 100, width: 40, height: 12 }, panel, bounds);
+    expect(mid).toEqual({ left: 40, top: 120 });
+    const edge = placeQuotaPanel({ left: 370, top: 100, width: 40, height: 12 }, panel, bounds);
+    expect(edge.left).toBe(390 - 260 - 8);
+    const low = placeQuotaPanel({ left: 0, top: 560, width: 40, height: 12 }, panel, bounds);
+    expect(low.left).toBe(8);
+    expect(low.top).toBe(560 - 190 - 8);
   });
 });

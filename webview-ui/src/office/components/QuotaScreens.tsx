@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import {
   QUOTA_SCREEN_HEIGHT,
@@ -10,8 +10,17 @@ import {
 } from '../../constants.js';
 import type { OfficeState } from '../engine/officeState.js';
 import { overlayProjection } from '../projection.js';
-import { quotaBars, type QuotaInfo, quotaTitle } from '../quotaFormat.js';
+import {
+  placeQuotaPanel,
+  QUOTA_PANEL_HEIGHT_PX,
+  QUOTA_PANEL_MARGIN_PX,
+  QUOTA_PANEL_WIDTH_PX,
+  quotaBars,
+  type QuotaInfo,
+  quotaTitle,
+} from '../quotaFormat.js';
 import { TILE_SIZE } from '../types.js';
+import { QuotaPanel } from './QuotaPanel.js';
 
 interface QuotaScreensProps {
   officeState: OfficeState;
@@ -47,6 +56,22 @@ export function QuotaScreens({
     return () => cancelAnimationFrame(rafId);
   }, []);
 
+  const [hoverUid, setHoverUid] = useState<string | null>(null);
+  const [pinnedUid, setPinnedUid] = useState<string | null>(null);
+  const closePinned = useCallback(() => setPinnedUid(null), []);
+
+  // A click outside the TV and the panel closes a pinned panel.
+  useEffect(() => {
+    if (!pinnedUid) return;
+    const onDown = (e: PointerEvent) => {
+      const target = e.target as Element | null;
+      if (target?.closest('[data-testid="quota-screen"], [data-testid="quota-panel"]')) return;
+      setPinnedUid(null);
+    };
+    document.addEventListener('pointerdown', onDown);
+    return () => document.removeEventListener('pointerdown', onDown);
+  }, [pinnedUid]);
+
   const el = containerRef.current;
   if (!el) return null;
   const layout = officeState.getLayout();
@@ -56,29 +81,54 @@ export function QuotaScreens({
   const dpr = window.devicePixelRatio || 1;
   const project = overlayProjection(layout, el.getBoundingClientRect(), zoom, panRef.current, dpr);
   const px = (worldPx: number) => (worldPx * zoom) / dpr;
+  const bounds = el.getBoundingClientRect();
+  const shownUid = pinnedUid ?? hoverUid;
 
   return (
     <>
       {tvs.map((tv) => {
+        const box = {
+          left: project.toScreenX(tv.col * TILE_SIZE + QUOTA_SCREEN_INSET_X),
+          top: project.toScreenY(tv.row * TILE_SIZE + QUOTA_SCREEN_INSET_Y),
+          width: px(QUOTA_SCREEN_WIDTH),
+          height: px(QUOTA_SCREEN_HEIGHT),
+        };
         const { provider, title } = QUOTA_TV_PROVIDERS[tv.type];
         const info = quotas[provider];
         const bars = quotaBars(info, nowSec);
-        const hover = [quotaTitle(title, info, nowSec), ...bars.map((b) => b.title)].join('\n');
+        const summary = [quotaTitle(title, info, nowSec), ...bars.map((b) => b.title)].join('\n');
+        const panelWidth = Math.min(QUOTA_PANEL_WIDTH_PX, bounds.width - 2 * QUOTA_PANEL_MARGIN_PX);
+        const place = placeQuotaPanel(
+          box,
+          { width: panelWidth, height: QUOTA_PANEL_HEIGHT_PX },
+          bounds,
+        );
         return (
-          <div
-            key={tv.uid}
-            className="absolute"
-            style={{
-              left: project.toScreenX(tv.col * TILE_SIZE + QUOTA_SCREEN_INSET_X),
-              top: project.toScreenY(tv.row * TILE_SIZE + QUOTA_SCREEN_INSET_Y),
-              width: px(QUOTA_SCREEN_WIDTH),
-              height: px(QUOTA_SCREEN_HEIGHT),
-              zIndex: QUOTA_SCREEN_Z_INDEX,
-            }}
-            title={hover}
-            data-testid="quota-screen"
-            data-provider={provider}
-          />
+          <div key={tv.uid}>
+            <div
+              className="absolute pointer-events-auto cursor-pointer"
+              style={{ ...box, zIndex: QUOTA_SCREEN_Z_INDEX }}
+              aria-label={summary}
+              role="button"
+              onPointerEnter={(e) => e.pointerType === 'mouse' && setHoverUid(tv.uid)}
+              onPointerLeave={(e) => e.pointerType === 'mouse' && setHoverUid(null)}
+              onClick={() => setPinnedUid((cur) => (cur === tv.uid ? null : tv.uid))}
+              data-testid="quota-screen"
+              data-provider={provider}
+            />
+            {shownUid === tv.uid && (
+              <QuotaPanel
+                title={title}
+                info={info}
+                nowSec={nowSec}
+                left={place.left}
+                top={place.top}
+                maxWidth={bounds.width}
+                pinned={pinnedUid === tv.uid}
+                onClose={closePinned}
+              />
+            )}
+          </div>
         );
       })}
     </>

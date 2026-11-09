@@ -340,6 +340,8 @@ export const OVERLAY_LABEL_SELECTED_Z_INDEX = 42;
 export const OVERLAY_BUBBLE_Z_INDEX = 43;
 /** The achievement notice: over the bubbles, under the intro. */
 export const ACHIEVEMENT_TOAST_Z_INDEX = 44;
+/** The quota TV detail panel: over the office overlays, under the modals. */
+export const QUOTA_PANEL_Z_INDEX = 49;
 /** The greeter stands this many tiles in from the office's bottom-left corner
  *  (target tile (margin, rows-1-margin); nearest walkable tile if blocked). */
 export const GREETER_TILE_MARGIN = 3;
