@@ -1,5 +1,5 @@
 import { ATTENTION_DELAY_SEC } from '../../constants.js';
-import type { Character, OfficeLayout } from '../types.js';
+import type { AreaRole, Character, OfficeLayout } from '../types.js';
 import { CharacterState, Direction } from '../types.js';
 
 /** Where an agent waiting on Rasmus stands, and whether it has got there. */
@@ -10,7 +10,7 @@ export interface AttentionState {
 }
 
 /** "col,row" keys of every tile painted with an Area whose role is `role`. */
-export function roleTileKeys(layout: OfficeLayout, role: 'lounge' | 'attention'): Set<string> {
+export function roleTileKeys(layout: OfficeLayout, role: AreaRole): Set<string> {
   const labels = new Set((layout.areas ?? []).filter((a) => a.role === role).map((a) => a.label));
   const keys = new Set<string>();
   if (labels.size === 0 || !layout.areaTiles) return keys;

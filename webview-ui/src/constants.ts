@@ -761,3 +761,11 @@ export const SIGN_FONT_WORLD_PX = 12;
 export const SIGN_LINE_HEIGHT = 0.9;
 export const SIGN_FONT_MIN_WORLD_PX = 3;
 export const SIGN_TEXT_COLOR = '#2e2018';
+
+// ── Meetings (TASK-3523) ─────────────────────────────────────
+/** A message answered within this many seconds turns the exchange into a meeting. */
+export const MEETING_REPLY_SEC = 60;
+/** A meeting ends when nobody has written for this long. */
+export const MEETING_IDLE_SEC = 60;
+/** How long a message shows as a bubble over its sender in a meeting. */
+export const MEETING_TALK_SEC = 6;

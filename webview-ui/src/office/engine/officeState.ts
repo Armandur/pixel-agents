@@ -13,6 +13,8 @@ import {
   INACTIVE_SEAT_TIMER_RANGE_SEC,
   LEVEL_UP_BUBBLE_SEC,
   MAX_PET_ID_LENGTH,
+  MEETING_IDLE_SEC,
+  MEETING_TALK_SEC,
   PET_HIT_HALF_WIDTH,
   PET_HIT_HEIGHT,
   SUBAGENT_DOOR_MAX_TILES,
@@ -79,6 +81,14 @@ import {
 import type { LoungeGame } from './loungePlay.js';
 import { gamesInLayout, litGameTiles } from './loungePlay.js';
 import { advanceMatrixEffect, startMatrixEffect } from './matrixEffectState.js';
+import {
+  advanceMeetingSeat,
+  advanceMeetingTalk,
+  isReply,
+  type Meeting,
+  meetingKey,
+  pickMeetingSeats,
+} from './meeting.js';
 import { createPet, updatePet } from './petEntity.js';
 import { seatOwnedBy, seatOwners } from './seatOwners.js';
 import { anchorTile, closestFreeSeat } from './seatPlacement.js';
@@ -138,6 +148,12 @@ export class OfficeState {
     tiles: Array<{ col: number; row: number }>;
     keys: Set<string>;
   } | null = null;
+  /** Meetings in progress, by meetingKey (office/engine/meeting.ts). */
+  meetings = new Map<string, Meeting>();
+  /** When each "from>to" pair last messaged, to tell a reply (and so a meeting). */
+  private lastSent = new Map<string, number>();
+  /** Meeting-room tile keys, cached per layout object. */
+  private meetingCache: { layout: OfficeLayout; keys: Set<string> } | null = null;
   /** Since when (ms) each agent has needed Rasmus without a break. */
   private attentionSince = new Map<number, number>();
   /** Placed games, cached per layout object (see loungeGames()). */
@@ -625,8 +641,16 @@ export class OfficeState {
     const pick2 = this.pickFromSeats(unzoned, electronicsTiles);
     if (pick2) return pick2;
 
-    // Stage 3 — any free seat.
-    return this.pickFromSeats(freeSeats, electronicsTiles);
+    // Stage 3 — any free seat, the lounge's and the meeting room's last.
+    const roomKeys = new Set([...this.loungeKeys(), ...this.meetingKeys()]);
+    const outside = freeSeats.filter((uid) => {
+      const s = this.seats.get(uid)!;
+      return !roomKeys.has(`${s.seatCol},${s.seatRow}`);
+    });
+    return (
+      this.pickFromSeats(outside, electronicsTiles) ??
+      this.pickFromSeats(freeSeats, electronicsTiles)
+    );
   }
 
   /** Closest walkable tile to (col,row) not occupied by another character, at
@@ -1421,6 +1445,11 @@ export class OfficeState {
     const ch = this.characters.get(fromId);
     const to = this.characters.get(toId);
     if (!ch || ch.isSubagent || fromId === toId || !to || isLeaving(to) || isLeaving(ch)) return;
+    const now = Date.now();
+    const meetingOn = this.meetings.has(meetingKey(fromId, toId));
+    const reply = isReply(this.lastSent, fromId, toId, now);
+    this.lastSent.set(`${fromId}>${toId}`, now);
+    if ((meetingOn || reply) && this.meet(ch, to, summary, now)) return;
     if (requestVisit(ch, { targetId: toId, summary }) === 'start') {
       this.startVisit(ch, { targetId: toId, summary });
     }
@@ -1535,6 +1564,110 @@ export class OfficeState {
       }
     }
     return true;
+  }
+
+  private meetingKeys(): Set<string> {
+    if (this.meetingCache?.layout !== this.layout) {
+      this.meetingCache = { layout: this.layout, keys: roleTileKeys(this.layout, 'meeting') };
+    }
+    return this.meetingCache.keys;
+  }
+
+  /**
+   * Seat two agents that are writing back and forth in the meeting room, or
+   * (already meeting) let the new message speak. False when there is no
+   * meeting room or no two free chairs: the caller falls back to a visit.
+   */
+  private meet(from: Character, to: Character, summary: string | undefined, now: number): boolean {
+    const key = meetingKey(from.id, to.id);
+    let m = this.meetings.get(key);
+    if (!m) {
+      const keys = this.meetingKeys();
+      if (keys.size === 0) return false;
+      const claimed = new Set<string>();
+      for (const c of this.characters.values()) if (c.meeting) claimed.add(c.meeting.seatUid);
+      const pair = pickMeetingSeats(this.seats.values(), keys, claimed);
+      if (!pair) return false;
+      m = { a: from.id, b: to.id, lastAt: now, talkTimer: 0, pending: [] };
+      this.meetings.set(key, m);
+      // The message that started it all, if the desk visit never got to say it.
+      for (const ch of [from, to]) {
+        const other = ch === from ? to : from;
+        if (ch.visit?.targetId === other.id && ch.visit.phase === 'going') {
+          m.pending.push({ speakerId: ch.id, summary: ch.visit.summary });
+        }
+      }
+      for (const [ch, seat] of [
+        [from, pair[0]],
+        [to, pair[1]],
+      ] as const) {
+        // Their desk visit to each other is replaced by the meeting.
+        if (ch.visit && (ch.visit.targetId === from.id || ch.visit.targetId === to.id)) {
+          ch.visit = undefined;
+        }
+        if (ch.visitQueue) {
+          ch.visitQueue = ch.visitQueue.filter(
+            (r) => r.targetId !== from.id && r.targetId !== to.id,
+          );
+        }
+        if (ch.lounge) this.leaveLounge(ch);
+        ch.meeting = { seatUid: seat.uid, arrived: false };
+        const chairKey = `${seat.seatCol},${seat.seatRow}`;
+        const wasBlocked = this.blockedTiles.delete(chairKey);
+        ch.path = this.withOwnSeatUnblocked(ch, () =>
+          findPath(
+            ch.tileCol,
+            ch.tileRow,
+            seat.seatCol,
+            seat.seatRow,
+            this.tileMap,
+            this.blockedTiles,
+          ),
+        );
+        if (wasBlocked) this.blockedTiles.add(chairKey);
+        ch.moveProgress = 0;
+      }
+    }
+    m.lastAt = now;
+    m.pending.push({ speakerId: from.id, summary });
+    return true;
+  }
+
+  /** End meetings nobody has written in for MEETING_IDLE_SEC, or that lost a participant. */
+  private advanceMeetings(dt: number, now: number): void {
+    for (const [key, m] of this.meetings) {
+      const a = this.characters.get(m.a);
+      const b = this.characters.get(m.b);
+      const seated = !!a?.meeting?.arrived && !!b?.meeting?.arrived;
+      advanceMeetingTalk(m, seated, dt, MEETING_TALK_SEC);
+      // Silence counts from the last line said, not from when it was written.
+      if (m.talkTimer > 0 || m.pending.length > 0) m.lastAt = Math.max(m.lastAt, now - 1);
+      const gone = (c: Character | undefined) => !c || isLeaving(c) || c.matrixEffect === 'despawn';
+      if (now - m.lastAt < MEETING_IDLE_SEC * 1000 && !gone(a) && !gone(b)) continue;
+      this.meetings.delete(key);
+      for (const c of [a, b]) {
+        if (c?.meeting) {
+          c.meeting = undefined;
+          c.path = [];
+          c.state = CharacterState.IDLE; // the FSM walks it back to its own seat
+        }
+      }
+    }
+  }
+
+  /** In a meeting: walk to the meeting chair and sit. True when it drove the character this frame. */
+  private updateMeeting(ch: Character, dt: number): boolean {
+    if (!ch.meeting) return false;
+    advanceMeetingSeat(ch, this.seats.get(ch.meeting.seatUid), dt, walkFrame);
+    return true;
+  }
+
+  /** The bubble a meeting speaker shows now, if any (ToolOverlay). */
+  meetingLine(id: number): string | undefined {
+    for (const m of this.meetings.values()) {
+      if (m.speakerId === id && m.talkTimer > 0) return m.summary ?? '...';
+    }
+    return undefined;
   }
 
   /** "col,row" keys of the attention Area (väntezonen), cached per layout object. */
@@ -1739,6 +1872,7 @@ export class OfficeState {
     const now = Date.now();
     const toDelete: number[] = [];
     this.advanceDoorQueue();
+    this.advanceMeetings(dt, now);
     for (const ch of this.characters.values()) {
       if (this.isQueued(ch)) continue; // waiting its turn at the door, unseen
       const effect = advanceMatrixEffect(ch, dt);
@@ -1779,6 +1913,7 @@ export class OfficeState {
       } else if (
         !heldForTalk.has(ch.id) &&
         !this.updateAttention(ch, dt, now) &&
+        !this.updateMeeting(ch, dt) &&
         !this.updateLounge(ch, dt, now)
       ) {
         // Temporarily unblock own seat so character can pathfind to it

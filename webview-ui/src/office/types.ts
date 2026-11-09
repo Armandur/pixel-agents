@@ -28,6 +28,7 @@ import type { ColorValue } from '../components/ui/types.js';
 import type { AttentionState } from './engine/attention.js';
 import type { Visit, VisitRequest } from './engine/conversation.js';
 import type { LoungeState } from './engine/lounge.js';
+import type { MeetingSeat } from './engine/meeting.js';
 
 export const CharacterState = {
   IDLE: 'idle',
@@ -165,7 +166,7 @@ export interface CarpetTile {
 // AREAS — translucent named overlays for Directory ↔ seat preference.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type AreaRole = 'lounge' | 'attention';
+export type AreaRole = 'lounge' | 'attention' | 'meeting';
 
 export interface AreaDefinition {
   /** Stable label used as the FK in `areaTiles` and `OfficeState.areaMappings`. */
@@ -174,6 +175,7 @@ export interface AreaDefinition {
   color: string;
   /** 'lounge': idle agents gather here (see office/engine/lounge.ts).
    *  'attention': agents waiting on Rasmus stand here (office/engine/attention.ts).
+   *  'meeting': two agents writing back and forth sit down here (office/engine/meeting.ts).
    *  Absent = a plain Area. */
   role?: AreaRole;
 }
@@ -298,6 +300,8 @@ export interface Character {
   lounge?: LoungeState;
   /** Waiting on Rasmus: its spot in the attention Area (office/engine/attention.ts). */
   attention?: AttentionState;
+  /** In a meeting: its chair in the meeting room (office/engine/meeting.ts). */
+  meeting?: MeetingSeat;
   /** ID of the lead agent (set on teammates) */
   leadAgentId?: number;
   /** True when lead spawns teammates via tmux (run_in_background Agent calls) */

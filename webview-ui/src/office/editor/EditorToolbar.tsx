@@ -501,6 +501,9 @@ export function EditorToolbar({
                       area.role === 'attention' ? undefined : 'attention',
                     )
                   }
+                  onToggleMeeting={() =>
+                    onAreaRoleChange(area.label, area.role === 'meeting' ? undefined : 'meeting')
+                  }
                   directories={directories}
                   areaMappings={areaMappings}
                   onAreaMappingChange={onAreaMappingChange}
@@ -808,6 +811,7 @@ function AreaCard({
   onColorChange,
   onToggleLounge,
   onToggleAttention,
+  onToggleMeeting,
   directories,
   areaMappings,
   onAreaMappingChange,
@@ -820,6 +824,7 @@ function AreaCard({
   onColorChange: (color: string) => void;
   onToggleLounge: () => void;
   onToggleAttention: () => void;
+  onToggleMeeting: () => void;
   directories: { name: string; path: string }[];
   areaMappings: Record<string, string[]>;
   onAreaMappingChange: (directoryName: string, areaLabel: string, action: 'add' | 'remove') => void;
@@ -935,6 +940,20 @@ function AreaCard({
         title="Agents waiting for your answer or approval stand here"
       >
         {area.role === 'attention' ? 'Waiting zone: on' : 'Waiting zone: off'}
+      </Button>
+
+      {/* Meeting role: two agents writing back and forth sit down here (konferensrummet). */}
+      <Button
+        variant={area.role === 'meeting' ? 'active' : 'default'}
+        size="sm"
+        onClick={(e) => {
+          e?.stopPropagation();
+          onToggleMeeting();
+        }}
+        aria-pressed={area.role === 'meeting'}
+        title="Agents that message each other back and forth meet here"
+      >
+        {area.role === 'meeting' ? 'Meeting room: on' : 'Meeting room: off'}
       </Button>
 
       <div className="flex flex-col gap-2 max-h-80 overflow-y-auto pixel-scrollbar">

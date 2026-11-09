@@ -213,6 +213,32 @@ export function ToolOverlay({
 
         // Mingling in the lounge: a short made-up phrase, same look and place
         // as the real talk bubble (loungeChatLines never overlaps that one).
+        // In a meeting: the latest message shows just over whoever wrote it,
+        // where the lounge chatter sits.
+        const meetingLine = officeState.meetingLine(id);
+        if (meetingLine !== undefined) {
+          const meetSittingOff = ch.state === CharacterState.TYPE ? CHARACTER_SITTING_OFFSET_PX : 0;
+          bubbleNode = (
+            <>
+              {bubbleNode}
+              <div
+                className="absolute -translate-x-1/2 -translate-y-full pointer-events-none pixel-panel border-border px-8 py-4 text-base leading-tight max-w-2xs overflow-hidden text-ellipsis whitespace-nowrap"
+                style={{
+                  left: project.toScreenX(ch.x),
+                  top:
+                    project.toScreenY(ch.y + meetSittingOff - TOOL_OVERLAY_VERTICAL_OFFSET) -
+                    LOUNGE_CHAT_BUBBLE_LIFT_PX,
+                  zIndex: OVERLAY_BUBBLE_Z_INDEX,
+                }}
+                data-testid="meeting-bubble"
+                data-agent-id={id}
+              >
+                {meetingLine}
+              </div>
+            </>
+          );
+        }
+
         // Just went up a level: "Lvl N!" in gold where the chatter would be
         // (it wins over the chatter, a real talk bubble wins over it).
         const levelUp = ch.visit?.phase === 'talking' ? undefined : officeState.levelUps.get(id);
