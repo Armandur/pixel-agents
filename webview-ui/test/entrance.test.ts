@@ -60,7 +60,7 @@ beforeAll(() => {
 });
 
 /** A 6x6 room: walls round it, a door in the bottom wall at (2,5), a stool at (2,1). */
-function office(withDoor: boolean) {
+function office(withDoor: boolean, stools = 1) {
   const tiles: number[] = [];
   for (let r = 0; r < 6; r++)
     for (let c = 0; c < 6; c++)
@@ -72,6 +72,7 @@ function office(withDoor: boolean) {
     tiles,
     furniture: [
       { uid: 'stool', type: 'STOOL', col: 2, row: 1 },
+      ...(stools > 1 ? [{ uid: 'stool2', type: 'STOOL', col: 3, row: 1 }] : []),
       ...(withDoor ? [{ uid: 'door', type: 'DOOR', col: 2, row: 4 }] : []),
     ],
   } as OfficeLayout;
@@ -144,4 +145,71 @@ test('a new sub-agent also comes in through the door, then goes to its computer 
   assert.deepEqual([sub.tileCol, sub.tileRow], [2, 6], 'starts outside the door');
   run(os, 15, () => sub.doorway === undefined && sub.path.length === 0 && sub.tileRow < 4);
   assert.ok(sub.tileRow < 4, 'walked in toward its parent');
+});
+
+test('two newcomers in the same frame come in one at a time, in creation order', () => {
+  const os = office(true, 2);
+  os.addAgent(1);
+  os.addAgent(2);
+  const [a, b] = [os.characters.get(1)!, os.characters.get(2)!];
+  assert.equal(a.matrixEffect, 'spawn');
+  assert.equal(b.matrixEffect, null, 'the second does not materialize yet');
+  assert.ok(!os.getCharacters().some((c) => c === b && c.x >= 0), 'and is not on the map');
+  let bAppeared = -1;
+  let sharedTile = false;
+  let aClearAtAppear = false;
+  for (let t = 0; t < 20; t += 0.05) {
+    os.update(0.05);
+    if (bAppeared < 0 && b.matrixEffect === 'spawn') {
+      bAppeared = t;
+      aClearAtAppear =
+        Math.abs(a.tileCol - 2) + Math.abs(a.tileRow - 6) >= 4 || a.doorway === undefined;
+    }
+    if (bAppeared >= 0 && a.tileCol === b.tileCol && a.tileRow === b.tileRow) sharedTile = true;
+    if (bAppeared < 0) assert.ok(b.x < 0, 'unseen until its turn');
+  }
+  assert.ok(bAppeared > 0.3, 'the second waited for the first');
+  assert.ok(aClearAtAppear, 'the first was already inside');
+  assert.equal(sharedTile, false, 'never on the same tile');
+  for (const c of [a, b]) {
+    const seat = os.seats.get(c.seatId!)!;
+    assert.deepEqual([c.tileCol, c.tileRow], [seat.seatCol, seat.seatRow], 'reaches its seat');
+  }
+});
+
+test('a sub-agent created with its parent waits for the parent to get in', () => {
+  const os = office(true, 2);
+  os.addAgent(1);
+  const id = os.addSubagent(1, 'tool-1');
+  const sub = os.characters.get(id)!;
+  assert.equal(sub.matrixEffect, null);
+  run(os, 20);
+  assert.equal(sub.doorway, undefined);
+  assert.ok(sub.tileRow < 5, 'came in too');
+});
+
+test('a waiting newcomer that is removed leaves the queue without a trace', () => {
+  const os = office(true, 2);
+  os.addAgent(1);
+  os.addAgent(2);
+  os.addAgent(3);
+  const seat = os.characters.get(2)!.seatId!;
+  os.removeAgent(2);
+  assert.equal(os.characters.has(2), false);
+  assert.equal(os.seats.get(seat)!.assigned, false, 'its seat is free again');
+  run(os, 20);
+  const c = os.characters.get(3)!;
+  assert.ok(c.tileRow < 5, 'the third still comes in, now second in line');
+  assert.equal(os.characters.has(2), false);
+});
+
+test('a waiting sub-agent that is removed leaves the queue without a trace', () => {
+  const os = office(true, 2);
+  os.addAgent(1);
+  const id = os.addSubagent(1, 'tool-1');
+  os.removeSubagent(1, 'tool-1');
+  assert.equal(os.characters.has(id), false);
+  assert.equal(os.getSubagentId(1, 'tool-1'), null);
+  run(os, 5);
+  assert.equal(os.characters.has(1), true);
 });

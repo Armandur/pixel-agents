@@ -83,6 +83,13 @@ export const SUBAGENT_REPORT_MAX_SEC = 20;
 export const DOOR_OPEN_SEC = 0.3;
 /** A leaver that has not reached the door by now vanishes where it is. */
 export const DOOR_EXIT_TIMEOUT_SEC = 30;
+/** A newcomer who is still walking counts as in the door's way until it is
+ *  this many tiles (Manhattan) from the outside tile: two steps past the
+ *  inside tile. Then the next one in the queue may materialize. */
+export const ENTRANCE_CLEAR_TILES = 4;
+/** Where a character waiting its turn is parked: far off the map, so neither
+ *  the canvas nor the label overlay shows it. */
+export const ENTRANCE_PARK_PX = -10000;
 /** A finished sub-agent walks out only when the door is at most this many tiles away. */
 export const SUBAGENT_DOOR_MAX_TILES = 40;
 /** CSS px the talk bubble sits above the point the activity label hangs from,

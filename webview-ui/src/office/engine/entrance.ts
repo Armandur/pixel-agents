@@ -1,4 +1,9 @@
-import { DOOR_EXIT_TIMEOUT_SEC, DOOR_OPEN_SEC } from '../../constants.js';
+import {
+  DOOR_EXIT_TIMEOUT_SEC,
+  DOOR_OPEN_SEC,
+  ENTRANCE_CLEAR_TILES,
+  ENTRANCE_PARK_PX,
+} from '../../constants.js';
 import { getCatalogEntry } from '../layout/furnitureCatalog.js';
 import type { Character, OfficeLayout } from '../types.js';
 import { CharacterState, Direction, TileType } from '../types.js';
@@ -85,6 +90,41 @@ export function beginEntering(ch: Character, e: Entrance): void {
   ch.state = CharacterState.IDLE;
   ch.dir = Direction.UP;
   ch.doorway = { phase: 'appear', timer: 0 };
+}
+
+/** Park a newcomer out of sight until it is its turn (see doorBusy). */
+export function parkForEntrance(ch: Character): void {
+  ch.x = ENTRANCE_PARK_PX;
+  ch.y = ENTRANCE_PARK_PX;
+  ch.path = [];
+  ch.moveProgress = 0;
+  ch.state = CharacterState.IDLE;
+}
+
+/**
+ * The door is taken: someone stands on the outside tile, is still
+ * materializing or stepping in, or `last` (the newest arrival) is still
+ * walking within ENTRANCE_CLEAR_TILES of the outside tile. A leaver that is
+ * not yet on the outside tile does not count (not solved: it can still meet a
+ * newcomer in the doorway).
+ */
+export function doorBusy(
+  characters: Iterable<Character>,
+  e: Entrance,
+  last: Character | undefined,
+  isQueued: (ch: Character) => boolean,
+): boolean {
+  for (const ch of characters) {
+    if (isQueued(ch)) continue;
+    const p = ch.doorway?.phase;
+    if (p === 'appear' || p === 'enter') return true;
+    if (ch.tileCol === e.col && ch.tileRow === e.outsideRow) return true;
+  }
+  if (last && !isQueued(last) && !last.doorway && last.path.length > 0) {
+    const d = Math.abs(last.tileCol - e.col) + Math.abs(last.tileRow - e.outsideRow);
+    if (d < ENTRANCE_CLEAR_TILES) return true;
+  }
+  return false;
 }
 
 /** Send a character (its path to the inside tile already set) out. */

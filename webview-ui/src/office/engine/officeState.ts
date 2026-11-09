@@ -53,10 +53,12 @@ import {
   advanceOpenness,
   beginEntering,
   beginLeaving,
+  doorBusy,
   doorFrame,
   doorWanted,
   findEntrance,
   isLeaving,
+  parkForEntrance,
 } from './entrance.js';
 import type { LoungeContext } from './lounge.js';
 import {
@@ -126,6 +128,10 @@ export class OfficeState {
   /** Placed games, cached per layout object (see loungeGames()). */
   private gamesCache: { layout: OfficeLayout; games: LoungeGame[] } | null = null;
   private electronicsCache: { layout: OfficeLayout; tiles: Set<string> } | null = null;
+  /** Newcomers waiting for the entrance door, in the order they were created. */
+  private doorQueue: number[] = [];
+  /** The newest arrival through the door (the next waits until it is clear). */
+  private lastArrivalId: number | undefined;
   /** The entrance door, cached per layout object (see entrance()). */
   private entranceCache: { layout: OfficeLayout; entrance: Entrance | null } | null = null;
   /** How open the entrance door is (0 shut … 1 open), and the frame it shows. */
@@ -388,6 +394,79 @@ export class OfficeState {
     return true;
   }
 
+  private isQueued(ch: Character): boolean {
+    return this.doorQueue.includes(ch.id);
+  }
+
+  /** A newcomer comes in through the door: now when the door is free and
+   *  nobody waits, else it is parked unseen and queued for its turn. The
+   *  caller adds `ch` to `characters` afterwards. */
+  private arriveViaDoor(ch: Character, e: Entrance): void {
+    const last =
+      this.lastArrivalId !== undefined ? this.characters.get(this.lastArrivalId) : undefined;
+    if (
+      this.doorQueue.length > 0 ||
+      doorBusy(this.characters.values(), e, last, (c) => this.isQueued(c))
+    ) {
+      parkForEntrance(ch);
+      this.doorQueue.push(ch.id);
+      return;
+    }
+    beginEntering(ch, e);
+    startMatrixEffect(ch, 'spawn');
+    this.lastArrivalId = ch.id;
+  }
+
+  /** Let the first in the queue materialize once the door is free. */
+  private advanceDoorQueue(): void {
+    while (this.doorQueue.length > 0) {
+      const ch = this.characters.get(this.doorQueue[0]);
+      if (!ch) {
+        this.doorQueue.shift();
+        continue;
+      }
+      const e = this.entrance();
+      if (!e) {
+        // The entrance is gone: everyone waiting appears where they would sit.
+        this.doorQueue.shift();
+        const seat = ch.seatId ? this.seats.get(ch.seatId) : undefined;
+        const at = seat
+          ? { col: seat.seatCol, row: seat.seatRow }
+          : (this.closestFreeWalkableTile(1, 1) ?? { col: 1, row: 1 });
+        ch.tileCol = at.col;
+        ch.tileRow = at.row;
+        ch.x = at.col * TILE_SIZE + TILE_SIZE / 2;
+        ch.y = at.row * TILE_SIZE + TILE_SIZE / 2;
+        startMatrixEffect(ch, 'spawn');
+        continue;
+      }
+      const last =
+        this.lastArrivalId !== undefined ? this.characters.get(this.lastArrivalId) : undefined;
+      if (doorBusy(this.characters.values(), e, last, (c) => this.isQueued(c))) return;
+      this.doorQueue.shift();
+      beginEntering(ch, e);
+      startMatrixEffect(ch, 'spawn');
+      this.lastArrivalId = ch.id;
+      return;
+    }
+  }
+
+  /** A character still waiting for the door just leaves the queue and the
+   *  office, with its seat. False when it was not waiting. */
+  private dropQueued(ch: Character): boolean {
+    if (!this.isQueued(ch)) return false;
+    this.doorQueue = this.doorQueue.filter((q) => q !== ch.id);
+    if (ch.seatId) {
+      const seat = this.seats.get(ch.seatId);
+      if (seat) seat.assigned = false;
+      ch.seatId = null;
+    }
+    this.characters.delete(ch.id);
+    if (this.selectedAgentId === ch.id) this.selectedAgentId = null;
+    if (this.cameraFollowId === ch.id) this.cameraFollowId = null;
+    return true;
+  }
+
   /** A newcomer that has stepped inside walks on to its seat (a seatless
    *  sub-agent to beside its parent). */
   private walkToSeat(ch: Character): void {
@@ -645,8 +724,8 @@ export class OfficeState {
       // A newcomer materializes in the entrance doorway and walks in (a
       // teammate placed beside its lead appears there, as before).
       const e = nearAgentId === undefined ? this.entrance() : null;
-      if (e) beginEntering(ch, e);
-      startMatrixEffect(ch, 'spawn');
+      if (e) this.arriveViaDoor(ch, e);
+      else startMatrixEffect(ch, 'spawn');
     }
     ch.crowned = this.crownedAgentIds.has(id);
     ch.figure = this.figureById.get(id);
@@ -733,6 +812,7 @@ export class OfficeState {
   removeAgent(id: number): void {
     const ch = this.characters.get(id);
     if (!ch) return;
+    if (this.dropQueued(ch)) return;
     if (ch.matrixEffect === 'despawn' || isLeaving(ch)) return; // already on its way out
     if (this.selectedAgentId === id) this.selectedAgentId = null;
     if (this.cameraFollowId === id) this.cameraFollowId = null;
@@ -916,9 +996,10 @@ export class OfficeState {
       Math.abs(parentCh.tileCol - e.col) + Math.abs(parentCh.tileRow - e.insideRow) <=
         SUBAGENT_DOOR_MAX_TILES
     ) {
-      beginEntering(ch, e);
+      this.arriveViaDoor(ch, e);
+    } else {
+      startMatrixEffect(ch, 'spawn');
     }
-    startMatrixEffect(ch, 'spawn');
     this.characters.set(id, ch);
 
     this.subagentIdMap.set(key, id);
@@ -949,6 +1030,11 @@ export class OfficeState {
     if (id === undefined) return;
 
     const ch = this.characters.get(id);
+    if (ch && this.dropQueued(ch)) {
+      this.subagentIdMap.delete(key);
+      this.subagentMeta.delete(id);
+      return;
+    }
     if (ch) {
       if (ch.matrixEffect === 'despawn') {
         // Already despawning — just clean up maps
@@ -987,6 +1073,11 @@ export class OfficeState {
       const meta = this.subagentMeta.get(id);
       if (meta && meta.parentAgentId === parentAgentId) {
         const ch = this.characters.get(id);
+        if (ch && this.dropQueued(ch)) {
+          this.subagentMeta.delete(id);
+          toRemove.push(key);
+          continue;
+        }
         if (ch) {
           if (ch.matrixEffect === 'despawn') {
             // Already despawning — just clean up maps
@@ -1579,7 +1670,9 @@ export class OfficeState {
 
     const now = Date.now();
     const toDelete: number[] = [];
+    this.advanceDoorQueue();
     for (const ch of this.characters.values()) {
+      if (this.isQueued(ch)) continue; // waiting its turn at the door, unseen
       const effect = advanceMatrixEffect(ch, dt);
       if (effect !== 'none') {
         if (effect === 'despawned') toDelete.push(ch.id);
