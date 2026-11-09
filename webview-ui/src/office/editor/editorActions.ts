@@ -837,3 +837,22 @@ export function expandLayout(
     shift: { col: shiftCol, row: shiftRow },
   };
 }
+
+/** Set (or with null, clear) a placed item's sign text. Same layout object when nothing changes. */
+export function setFurnitureText(
+  layout: OfficeLayout,
+  uid: string,
+  text: string | null,
+): OfficeLayout {
+  const trimmed = text?.trim() || undefined;
+  const idx = layout.furniture.findIndex((f) => f.uid === uid);
+  if (idx === -1 || layout.furniture[idx].text === trimmed) return layout;
+  const furniture = layout.furniture.map((f, i) => {
+    if (i !== idx) return f;
+    const next = { ...f };
+    if (trimmed) next.text = trimmed;
+    else delete next.text;
+    return next;
+  });
+  return { ...layout, furniture };
+}

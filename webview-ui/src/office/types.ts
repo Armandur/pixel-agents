@@ -71,6 +71,8 @@ export interface FurnitureInstance {
   mirrored?: boolean;
   /** A quota TV: draw this provider's usage screen over the sprite. */
   quotaProvider?: string;
+  /** A sign: draw this text on its face, in the box SIGN_TYPES gives its type. */
+  sign?: { text: string; type: string };
 }
 
 export interface ToolActivity {
@@ -140,6 +142,8 @@ export interface PlacedFurniture {
   /** Visual offset in px within half a tile (see office/editor/nudge.ts).
    *  Drawing only: footprint, blocking and seats stay on whole tiles. */
   nudge?: { x: number; y: number };
+  /** A sign's text (SIGN_TYPES), drawn on its face. */
+  text?: string;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -71,6 +71,7 @@ import { getCharacterSprite } from './characters.js';
 import { renderMatrixEffect } from './matrixEffect.js';
 import { getPetSpriteData } from './petEntity.js';
 import { drawQuotaScreen } from './quotaScreen.js';
+import { drawSignText } from './signText.js';
 
 // ── Settings ────────────────────────────────────────────────────
 
@@ -378,11 +379,13 @@ export function renderScene(
       });
     } else {
       const provider = f.quotaProvider;
+      const sign = f.sign;
       drawables.push({
         zY: f.zY,
         draw: (c) => {
           c.drawImage(cached, fx, fy);
           if (provider) drawQuotaScreen(c, fx, fy, zoom, provider, quotas[provider], nowSec);
+          if (sign) drawSignText(c, fx, fy, zoom, sign.type, sign.text);
         },
       });
     }

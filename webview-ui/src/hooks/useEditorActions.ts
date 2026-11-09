@@ -31,6 +31,7 @@ import {
   renameArea,
   rotateFurniture,
   setAreaRole,
+  setFurnitureText,
   toggleFurnitureState,
   updateAreaColor,
   wallStrokeAdds,
@@ -77,6 +78,8 @@ interface EditorActions extends Omit<FurnitureColorActions, 'pickColorAt'> {
   handleToggleState: () => void;
   handleNudgeSelected: (dx: number, dy: number) => void;
   handleSeatOwnerChange: (name: string | null) => void;
+  /** The selected sign's text (null clears it). */
+  handleSignTextChange: (text: string | null) => void;
   handleUndo: () => void;
   handleRedo: () => void;
   handleReset: () => void;
@@ -474,6 +477,15 @@ export function useEditorActions(
     [getOfficeState, editorState, applyEdit],
   );
 
+  const handleSignTextChange = useCallback(
+    (text: string | null) => {
+      const uid = editorState.selectedFurnitureUid;
+      if (!uid) return;
+      applyEdit(setFurnitureText(getOfficeState().getLayout(), uid, text));
+    },
+    [getOfficeState, editorState, applyEdit],
+  );
+
   const handleToggleState = useCallback(() => {
     // Same precedence as rotate: a selected placed item wins over the catalog
     // type, so T works with the Furniture tab open.
@@ -845,6 +857,7 @@ export function useEditorActions(
     handleRotateSelected,
     handleNudgeSelected,
     handleSeatOwnerChange,
+    handleSignTextChange,
     handleToggleState,
     handleUndo,
     handleRedo,

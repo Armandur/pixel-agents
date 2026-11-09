@@ -1,5 +1,5 @@
 import type { ColorValue } from '../../components/ui/types.js';
-import { QUOTA_TV_PROVIDERS } from '../../constants.js';
+import { QUOTA_TV_PROVIDERS, SIGN_TYPES } from '../../constants.js';
 import { getColorizedSprite } from '../colorize.js';
 import type {
   FurnitureInstance,
@@ -108,6 +108,7 @@ export function layoutToFurnitureInstances(furniture: PlacedFurniture[]): Furnit
     }
 
     const quotaProvider = QUOTA_TV_PROVIDERS[item.type]?.provider;
+    const signText = SIGN_TYPES[item.type] ? item.text?.trim() : undefined;
     instances.push({
       sprite,
       x,
@@ -115,6 +116,7 @@ export function layoutToFurnitureInstances(furniture: PlacedFurniture[]): Furnit
       zY,
       ...(mirrored ? { mirrored: true } : {}),
       ...(quotaProvider ? { quotaProvider } : {}),
+      ...(signText ? { sign: { text: signText, type: item.type } } : {}),
     });
   }
   return instances;

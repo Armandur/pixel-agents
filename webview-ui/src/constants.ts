@@ -744,3 +744,18 @@ export const ACHIEVEMENT_LABELS: Record<string, string> = {
 
 /** An agent waiting on Rasmus this long walks to the attention Area (a quick approval keeps it at its desk). */
 export const ATTENTION_DELAY_SEC = 5;
+
+// ── Wall signs (TASK-3524) ───────────────────────────────────
+/** Sign types and their text box, in world px from the sprite's top-left. */
+export const SIGN_TYPES: Readonly<Record<string, { x: number; y: number; w: number; h: number }>> =
+  {
+    SIGN_WALL: { x: 4, y: 6, w: 40, h: 19 },
+  };
+/** Longest sign text the editor accepts. */
+export const SIGN_MAX_CHARS = 32;
+/** Largest text on a sign, in world px; longer texts wrap onto two lines, then shrink. */
+export const SIGN_FONT_WORLD_PX = 12;
+/** Line height on a two-line sign, as a share of the font size. */
+export const SIGN_LINE_HEIGHT = 0.9;
+export const SIGN_FONT_MIN_WORLD_PX = 3;
+export const SIGN_TEXT_COLOR = '#2e2018';

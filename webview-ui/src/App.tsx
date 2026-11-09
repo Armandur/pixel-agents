@@ -21,7 +21,7 @@ import { Button } from './components/ui/Button.js';
 import { Modal } from './components/ui/Modal.js';
 import { VersionIndicator } from './components/VersionIndicator.js';
 import { ZoomControls } from './components/ZoomControls.js';
-import { OFFICE_CANVAS_TEST_ID } from './constants.js';
+import { OFFICE_CANVAS_TEST_ID, SIGN_TYPES } from './constants.js';
 import { useDirectoryEditor } from './hooks/useDirectoryEditor.js';
 import { useEditorActions } from './hooks/useEditorActions.js';
 import { useEditorKeyboard } from './hooks/useEditorKeyboard.js';
@@ -39,6 +39,7 @@ import { ToolOverlay } from './office/components/ToolOverlay.js';
 import { EditorState } from './office/editor/editorState.js';
 import { EditorToolbar } from './office/editor/EditorToolbar.js';
 import { SeatOwnerField } from './office/editor/SeatOwnerField.js';
+import { SignTextField } from './office/editor/SignTextField.js';
 import { OfficeState } from './office/engine/officeState.js';
 import { exportLayoutToFile } from './office/layout/exportLayout.js';
 import { isRotatable } from './office/layout/furnitureCatalog.js';
@@ -618,6 +619,8 @@ function App() {
                         names={[...new Set(Object.values(agentSessionNames))].sort()}
                         onChange={editor.handleSeatOwnerChange}
                       />
+                    ) : selUid && selType && SIGN_TYPES[selType] ? (
+                      <SignTextField text={selItem?.text} onChange={editor.handleSignTextChange} />
                     ) : undefined
                   }
                 />
