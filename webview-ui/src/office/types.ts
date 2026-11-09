@@ -68,6 +68,8 @@ export interface FurnitureInstance {
   zY: number;
   /** Render-time horizontal flip flag (for mirrored side variants) */
   mirrored?: boolean;
+  /** A quota TV: draw this provider's usage screen over the sprite. */
+  quotaProvider?: string;
 }
 
 export interface ToolActivity {

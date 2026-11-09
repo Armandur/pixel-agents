@@ -891,6 +891,7 @@ export function useExtensionMessages(
           stale: msg.stale === true,
         };
         setQuotas((prev) => ({ ...prev, [provider]: info }));
+        os.quotas = { ...os.quotas, [provider]: info };
       } else if (msg.type === 'agentConversation') {
         os.startConversation(
           msg.fromId as number,

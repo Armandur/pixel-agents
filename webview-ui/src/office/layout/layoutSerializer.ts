@@ -1,4 +1,5 @@
 import type { ColorValue } from '../../components/ui/types.js';
+import { QUOTA_TV_PROVIDERS } from '../../constants.js';
 import { getColorizedSprite } from '../colorize.js';
 import type {
   FurnitureInstance,
@@ -101,7 +102,15 @@ export function layoutToFurnitureInstances(furniture: PlacedFurniture[]): Furnit
       }
     }
 
-    instances.push({ sprite, x, y, zY, ...(mirrored ? { mirrored: true } : {}) });
+    const quotaProvider = QUOTA_TV_PROVIDERS[item.type]?.provider;
+    instances.push({
+      sprite,
+      x,
+      y,
+      zY,
+      ...(mirrored ? { mirrored: true } : {}),
+      ...(quotaProvider ? { quotaProvider } : {}),
+    });
   }
   return instances;
 }

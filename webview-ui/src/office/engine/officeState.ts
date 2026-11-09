@@ -27,6 +27,7 @@ import {
   layoutToTileMap,
 } from '../layout/layoutSerializer.js';
 import { findPath, getWalkableTiles, isWalkable } from '../layout/tileMap.js';
+import type { QuotaInfo } from '../quotaFormat.js';
 import { getPetCount, getPetName } from '../sprites/petSpriteData.js';
 import { getLoadedCharacterCount } from '../sprites/spriteData.js';
 import type {
@@ -103,6 +104,8 @@ export class OfficeState {
   private readonly sessionNames = new Map<number, string>();
   /** Generated figure seed by agent id; may arrive before the character. */
   private readonly figureById = new Map<number, string>();
+  /** Latest usage quota per provider (quotaUpdate), drawn on the quota TVs. */
+  quotas: Record<string, QuotaInfo> = {};
   /** Epoch ms each idle agent went idle (agentIdleSince); absent = working. */
   private readonly idleSinceById = new Map<number, number>();
   /** Lounge tile keys, cached per layout object (see loungeKeys()). */

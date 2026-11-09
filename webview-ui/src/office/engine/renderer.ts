@@ -45,6 +45,7 @@ import {
 } from '../../constants.js';
 import { getColorizedFloorSprite, hasFloorSprites, WALL_COLOR } from '../floorTiles.js';
 import { mapOffset } from '../projection.js';
+import type { QuotaInfo } from '../quotaFormat.js';
 import {
   getCarpetJunctionSprite,
   getCarpetPaletteKey,
@@ -69,6 +70,7 @@ import { getWallInstances, hasWallSprites, wallColorToHex } from '../wallTiles.j
 import { getCharacterSprite } from './characters.js';
 import { renderMatrixEffect } from './matrixEffect.js';
 import { getPetSpriteData } from './petEntity.js';
+import { drawQuotaScreen } from './quotaScreen.js';
 
 // ── Settings ────────────────────────────────────────────────────
 
@@ -353,8 +355,10 @@ export function renderScene(
   selectedAgentId: number | null,
   hoveredAgentId: number | null,
   pets: Pet[] = [],
+  quotas: Record<string, QuotaInfo> = {},
 ): void {
   const drawables: ZDrawable[] = [];
+  const nowSec = Date.now() / 1000;
 
   // Furniture
   for (const f of furniture) {
@@ -373,10 +377,12 @@ export function renderScene(
         },
       });
     } else {
+      const provider = f.quotaProvider;
       drawables.push({
         zY: f.zY,
         draw: (c) => {
           c.drawImage(cached, fx, fy);
+          if (provider) drawQuotaScreen(c, fx, fy, zoom, provider, quotas[provider], nowSec);
         },
       });
     }
@@ -891,6 +897,7 @@ export function renderFrame(
   activeAreaLabel?: string | null,
   pets?: Pet[],
   wallSetTiles?: Array<number | null>,
+  quotas?: Record<string, QuotaInfo>,
 ): { offsetX: number; offsetY: number } {
   // Clear
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
@@ -949,6 +956,7 @@ export function renderFrame(
     selectedId,
     hoveredId,
     pets ?? [],
+    quotas,
   );
 
   // Character speech bubbles render in ToolOverlay (DOM, above the labels).

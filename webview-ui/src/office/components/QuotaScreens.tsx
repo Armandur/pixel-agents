@@ -1,14 +1,11 @@
 import { useEffect, useState } from 'react';
 
 import {
-  providerBadge,
   QUOTA_SCREEN_HEIGHT,
   QUOTA_SCREEN_INSET_X,
   QUOTA_SCREEN_INSET_Y,
   QUOTA_SCREEN_WIDTH,
   QUOTA_SCREEN_Z_INDEX,
-  QUOTA_STALE_OPACITY,
-  QUOTA_SYMBOL_WORLD_PX,
   QUOTA_TV_PROVIDERS,
 } from '../../constants.js';
 import type { OfficeState } from '../engine/officeState.js';
@@ -26,11 +23,10 @@ interface QuotaScreensProps {
 }
 
 /**
- * The screen of every placed TV_CLAUDE / TV_CODEX: the provider's symbol (its
- * card badge, large) beside two horizontal usage bars, 5 h over 7 d, filled
- * cell by cell along the statusline's green → red ramp. No text to read at
- * small zoom: the exact numbers and reset times are in the hover title. DOM,
- * not canvas, so it follows React state; nothing when no TV is placed.
+ * The hover target of every placed TV_CLAUDE / TV_CODEX: an invisible box over
+ * the screen whose title carries the exact numbers and reset times. The
+ * screen itself (symbol + bars) is drawn on the canvas (engine/quotaScreen.ts)
+ * so characters in front of the TV cover it.
  */
 export function QuotaScreens({
   officeState,
@@ -67,57 +63,22 @@ export function QuotaScreens({
         const { provider, title } = QUOTA_TV_PROVIDERS[tv.type];
         const info = quotas[provider];
         const bars = quotaBars(info, nowSec);
-        const badge = providerBadge(provider);
         const hover = [quotaTitle(title, info, nowSec), ...bars.map((b) => b.title)].join('\n');
         return (
           <div
             key={tv.uid}
-            className="absolute flex items-center"
+            className="absolute"
             style={{
               left: project.toScreenX(tv.col * TILE_SIZE + QUOTA_SCREEN_INSET_X),
               top: project.toScreenY(tv.row * TILE_SIZE + QUOTA_SCREEN_INSET_Y),
               width: px(QUOTA_SCREEN_WIDTH),
               height: px(QUOTA_SCREEN_HEIGHT),
-              padding: `0 ${px(1)}px`,
-              gap: px(2),
-              opacity: info?.stale ? QUOTA_STALE_OPACITY : 1,
               zIndex: QUOTA_SCREEN_Z_INDEX,
             }}
             title={hover}
             data-testid="quota-screen"
             data-provider={provider}
-          >
-            {badge && (
-              <div
-                className="shrink-0 flex items-center justify-center leading-none"
-                style={{
-                  width: px(QUOTA_SYMBOL_WORLD_PX),
-                  height: px(QUOTA_SYMBOL_WORLD_PX),
-                  background: badge.fill,
-                  color: badge.border,
-                  border: `${px(1)}px solid ${badge.border}`,
-                  fontSize: px(QUOTA_SYMBOL_WORLD_PX * 0.8),
-                }}
-              >
-                {badge.glyph}
-              </div>
-            )}
-            <div className="flex flex-col flex-1" style={{ gap: px(2) }}>
-              {bars.map((bar) => (
-                <div
-                  key={bar.label}
-                  className="flex"
-                  style={{ gap: px(0.5), height: px(3) }}
-                  data-testid="quota-bar"
-                  data-filled={bar.filled}
-                >
-                  {bar.cellColors.map((color, i) => (
-                    <div key={i} className="flex-1" style={{ background: color }} />
-                  ))}
-                </div>
-              ))}
-            </div>
-          </div>
+          />
         );
       })}
     </>
