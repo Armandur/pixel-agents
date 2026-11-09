@@ -55,6 +55,7 @@ import type { LoungeGame } from './loungePlay.js';
 import { gamesInLayout, litGameTiles } from './loungePlay.js';
 import { advanceMatrixEffect, startMatrixEffect } from './matrixEffectState.js';
 import { createPet, updatePet } from './petEntity.js';
+import { seatOwnedBy, seatOwners } from './seatOwners.js';
 import { anchorTile, closestFreeSeat } from './seatPlacement.js';
 
 /** Internal helper: facing-tile coords for a seat. Returns null for invalid direction. */
@@ -96,6 +97,8 @@ export class OfficeState {
   cameraFollowId: number | null = null;
   hoveredAgentId: number | null = null;
   private readonly crownedAgentIds = new Set<number>();
+  /** Session names by agent id, for seats kept for a name (seatOwners.ts). */
+  private readonly sessionNames = new Map<number, string>();
   /** Epoch ms each idle agent went idle (agentIdleSince); absent = working. */
   private readonly idleSinceById = new Map<number, number>();
   /** Lounge tile keys, cached per layout object (see loungeKeys()). */
@@ -193,9 +196,17 @@ export class OfficeState {
       seat.assigned = false;
     }
 
-    // First pass: try to keep characters at their existing seats
+    // First pass: try to keep characters at their existing seats (not one
+    // that is now kept for somebody else)
+    const owners = seatOwners(layout);
+    const displaced: Character[] = [];
     for (const ch of this.characters.values()) {
-      if (ch.seatId && this.seats.has(ch.seatId)) {
+      const owner = ch.seatId ? owners.get(ch.seatId) : undefined;
+      if (
+        ch.seatId &&
+        this.seats.has(ch.seatId) &&
+        (!owner || owner === this.sessionNames.get(ch.id))
+      ) {
         const seat = this.seats.get(ch.seatId)!;
         if (!seat.assigned) {
           seat.assigned = true;
@@ -210,7 +221,20 @@ export class OfficeState {
           continue;
         }
       }
+      if (owner && ch.seatId && this.seats.has(ch.seatId)) displaced.push(ch);
       ch.seatId = null; // will be reassigned below
+    }
+
+    // Owners take their kept seats; whoever was moved off one swaps into the
+    // seat its owner left (or, failing that, any free seat below)
+    const freed: string[] = [];
+    for (const id of this.characters.keys()) {
+      const left = this.claimOwnedSeat(id);
+      if (left) freed.push(left);
+    }
+    for (const ch of displaced) {
+      const swap = freed.find((uid) => !this.seats.get(uid)?.assigned);
+      if (swap) this.reassignSeat(ch.id, swap);
     }
 
     // Second pass: assign remaining characters to free seats
@@ -397,8 +421,9 @@ export class OfficeState {
   private findFreeSeat(directoryName?: string): string | null {
     const electronicsTiles = this.buildElectronicsTileSet();
     const freeSeats: string[] = [];
+    const kept = seatOwners(this.layout);
     for (const [uid, seat] of this.seats) {
-      if (!seat.assigned) freeSeats.push(uid);
+      if (!seat.assigned && !kept.has(uid)) freeSeats.push(uid);
     }
     if (freeSeats.length === 0) return null;
 
@@ -535,6 +560,7 @@ export class OfficeState {
     }
     ch.crowned = this.crownedAgentIds.has(id);
     this.characters.set(id, ch);
+    this.claimOwnedSeat(id);
   }
 
   // ── Greeter ───────────────────────────────────────────────────
@@ -1315,6 +1341,42 @@ export class OfficeState {
   /** Crown an agent (config crownedSessions). Remembered for an agent whose
    *  character does not exist yet: the session name can arrive before the
    *  layout has placed it, and addAgent applies it then. */
+  /** An agent's session name arrived: remember it, and if a seat is kept for
+   *  that name, walk there. Like crowning, it may arrive before the character. */
+  setAgentSessionName(id: number, name: string): void {
+    if (this.sessionNames.get(id) === name) return;
+    this.sessionNames.set(id, name);
+    this.claimOwnedSeat(id);
+  }
+
+  /** Move an agent to the seat kept for its name, swapping anyone sitting
+   *  there into the owner's old seat. Returns the owner's old seat when it is
+   *  left free. No-op (null) without a kept seat or when already there. */
+  private claimOwnedSeat(id: number): string | null {
+    const ch = this.characters.get(id);
+    const seatUid = seatOwnedBy(this.layout, this.sessionNames.get(id));
+    const seat = seatUid ? this.seats.get(seatUid) : undefined;
+    if (!ch || ch.isSubagent || !seatUid || !seat || ch.seatId === seatUid) return null;
+    // Whoever sits there swaps: it takes the owner's old seat (or any free one).
+    const sitter = seat.assigned
+      ? [...this.characters.values()].find((c) => c.seatId === seatUid)
+      : undefined;
+    const ownersOld = ch.seatId;
+    if (sitter) {
+      seat.assigned = false;
+      sitter.seatId = null;
+    }
+    this.reassignSeat(id, seatUid);
+    if (sitter) {
+      const other =
+        ownersOld && !this.seats.get(ownersOld)?.assigned
+          ? ownersOld
+          : this.findFreeSeat(sitter.directoryName);
+      if (other) this.reassignSeat(sitter.id, other);
+    }
+    return ownersOld && !this.seats.get(ownersOld)?.assigned ? ownersOld : null;
+  }
+
   setAgentCrowned(id: number, crowned: boolean): void {
     if (crowned) this.crownedAgentIds.add(id);
     else this.crownedAgentIds.delete(id);

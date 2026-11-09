@@ -871,6 +871,7 @@ export function useExtensionMessages(
         const crowned = msg.crowned === true;
         setAgentCrowned((prev) => (!!prev[id] === crowned ? prev : { ...prev, [id]: crowned }));
         os.setAgentCrowned(id, crowned);
+        os.setAgentSessionName(id, name);
       } else if (msg.type === 'quotaUpdate') {
         const provider = msg.provider as string;
         const info: QuotaInfo = {

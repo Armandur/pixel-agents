@@ -35,9 +35,11 @@ import { QuotaScreens } from './office/components/QuotaScreens.js';
 import { ToolOverlay } from './office/components/ToolOverlay.js';
 import { EditorState } from './office/editor/editorState.js';
 import { EditorToolbar } from './office/editor/EditorToolbar.js';
+import { SeatOwnerField } from './office/editor/SeatOwnerField.js';
 import { OfficeState } from './office/engine/officeState.js';
 import { exportLayoutToFile } from './office/layout/exportLayout.js';
 import { isRotatable } from './office/layout/furnitureCatalog.js';
+import { getCatalogEntry } from './office/layout/furnitureCatalog.js';
 import { migrateLayoutColors } from './office/layout/layoutSerializer.js';
 import { overlayProjection } from './office/projection.js';
 import { getPetCount } from './office/sprites/petSpriteData.js';
@@ -544,9 +546,11 @@ function App() {
           {editor.isEditMode &&
             (() => {
               const selUid = editorState.selectedFurnitureUid;
-              const selColor = selUid
-                ? (officeState.getLayout().furniture.find((f) => f.uid === selUid)?.color ?? null)
-                : null;
+              const selItem = selUid
+                ? officeState.getLayout().furniture.find((f) => f.uid === selUid)
+                : undefined;
+              const selColor = selItem?.color ?? null;
+              const selType = selItem?.type;
               return (
                 <EditorToolbar
                   activeTool={editorState.activeTool}
@@ -589,6 +593,15 @@ function App() {
                   onAreaColorChange={editor.handleAreaColorChange}
                   onAreaRoleChange={editor.handleAreaRoleChange}
                   onAreaMappingChange={handleAreaMappingChange}
+                  selectionExtra={
+                    selUid && getCatalogEntry(selType ?? '')?.category === 'chairs' ? (
+                      <SeatOwnerField
+                        owner={officeState.getLayout().seatOwners?.[selUid]}
+                        names={[...new Set(Object.values(agentSessionNames))].sort()}
+                        onChange={editor.handleSeatOwnerChange}
+                      />
+                    ) : undefined
+                  }
                 />
               );
             })()}

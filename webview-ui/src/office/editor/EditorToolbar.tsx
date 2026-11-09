@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 
 import { Button } from '../../components/ui/Button.js';
@@ -88,6 +88,8 @@ interface EditorToolbarProps {
   onAreaColorChange: (label: string, color: string) => void;
   onAreaRoleChange: (label: string, role: 'lounge' | undefined) => void;
   onAreaMappingChange: (directoryName: string, areaLabel: string, action: 'add' | 'remove') => void;
+  /** Extra controls under the selected item's colour (e.g. a chair's owner). */
+  selectionExtra?: ReactNode;
 }
 
 const THUMB_ZOOM = 2;
@@ -135,6 +137,7 @@ export function EditorToolbar({
   onAreaColorChange,
   onAreaRoleChange,
   onAreaMappingChange,
+  selectionExtra,
 }: EditorToolbarProps) {
   const [activeCategory, setActiveCategory] = useState<FurniturePanelCategory>('desks');
   const [furnitureQuery, setFurnitureQuery] = useState('');
@@ -701,6 +704,7 @@ export function EditorToolbar({
           onReset={() => onSelectedFurnitureColorChange(null)}
         />
       )}
+      {selectedFurnitureUid && selectionExtra}
     </div>
   );
 }

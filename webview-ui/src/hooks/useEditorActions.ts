@@ -39,6 +39,7 @@ import {
 import type { EditorState } from '../office/editor/editorState.js';
 import { nudgeFurniture } from '../office/editor/nudge.js';
 import type { OfficeState } from '../office/engine/officeState.js';
+import { setSeatOwner } from '../office/engine/seatOwners.js';
 import { isAutoTile } from '../office/layout/autoTile.js';
 import { getRotatedType, getToggledType } from '../office/layout/furnitureCatalog.js';
 import type {
@@ -74,6 +75,7 @@ interface EditorActions extends Omit<FurnitureColorActions, 'pickColorAt'> {
   handleRotateSelected: () => void;
   handleToggleState: () => void;
   handleNudgeSelected: (dx: number, dy: number) => void;
+  handleSeatOwnerChange: (name: string | null) => void;
   handleUndo: () => void;
   handleRedo: () => void;
   handleReset: () => void;
@@ -461,6 +463,16 @@ export function useEditorActions(
     [getOfficeState, editorState, commitLayout],
   );
 
+  // Keep the selected chair's seat for one agent (by session name), or free it.
+  const handleSeatOwnerChange = useCallback(
+    (name: string | null) => {
+      const uid = editorState.selectedFurnitureUid;
+      if (!uid) return;
+      applyEdit(setSeatOwner(getOfficeState().getLayout(), uid, name));
+    },
+    [getOfficeState, editorState, applyEdit],
+  );
+
   const handleToggleState = useCallback(() => {
     // Same precedence as rotate: a selected placed item wins over the catalog
     // type, so T works with the Furniture tab open.
@@ -831,6 +843,7 @@ export function useEditorActions(
     handleDeleteSelected,
     handleRotateSelected,
     handleNudgeSelected,
+    handleSeatOwnerChange,
     handleToggleState,
     handleUndo,
     handleRedo,

@@ -186,6 +186,8 @@ export interface OfficeLayout {
   /** Per-tile wall set index (which wall_N.png), parallel to tiles array; read
    *  only for WALL tiles. Absent or null = set 0, the bundled walls. */
   wallSetTiles?: Array<number | null>;
+  /** Seats kept for one agent: seat uid → session name (see engine/seatOwners.ts). */
+  seatOwners?: Record<string, string>;
 }
 
 export interface Character {
