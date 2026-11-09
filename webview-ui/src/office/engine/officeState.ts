@@ -387,12 +387,20 @@ export class OfficeState {
     return true;
   }
 
-  /** A newcomer that has stepped inside walks on to its seat. */
+  /** A newcomer that has stepped inside walks on to its seat (a seatless
+   *  sub-agent to beside its parent). */
   private walkToSeat(ch: Character): void {
     const seat = ch.seatId ? this.seats.get(ch.seatId) : undefined;
-    if (!seat) return;
+    // A seatless sub-agent goes to stand beside its parent instead.
+    const parent = ch.parentAgentId != null ? this.characters.get(ch.parentAgentId) : undefined;
+    const target = seat
+      ? { col: seat.seatCol, row: seat.seatRow }
+      : parent
+        ? this.closestFreeWalkableTile(parent.tileCol, parent.tileRow, 1)
+        : null;
+    if (!target) return;
     ch.path = this.withOwnSeatUnblocked(ch, () =>
-      findPath(ch.tileCol, ch.tileRow, seat.seatCol, seat.seatRow, this.tileMap, this.blockedTiles),
+      findPath(ch.tileCol, ch.tileRow, target.col, target.row, this.tileMap, this.blockedTiles),
     );
     ch.moveProgress = 0;
     ch.state = ch.path.length > 0 ? CharacterState.WALK : CharacterState.IDLE;
@@ -897,6 +905,17 @@ export class OfficeState {
     if (seatId) {
       this.seats.get(seatId)!.assigned = true;
       ch.seatId = seatId;
+    }
+    // Like any newcomer it comes in through the entrance, when that is not
+    // too far from its parent; otherwise it appears beside the parent.
+    const e = this.entrance();
+    if (
+      e &&
+      parentCh &&
+      Math.abs(parentCh.tileCol - e.col) + Math.abs(parentCh.tileRow - e.insideRow) <=
+        SUBAGENT_DOOR_MAX_TILES
+    ) {
+      beginEntering(ch, e);
     }
     startMatrixEffect(ch, 'spawn');
     this.characters.set(id, ch);

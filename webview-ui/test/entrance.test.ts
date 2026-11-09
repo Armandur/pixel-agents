@@ -135,3 +135,13 @@ test('a finished sub-agent reports, then walks out through the door', () => {
   assert.ok(leftViaDoor, 'it headed for the door after reporting');
   assert.equal(os.characters.has(id), false);
 });
+
+test('a new sub-agent also comes in through the door, then goes to its computer or its parent', () => {
+  const os = office(true);
+  os.addAgent(1, undefined, undefined, undefined, true);
+  const id = os.addSubagent(1, 'tool-1');
+  const sub = os.characters.get(id)!;
+  assert.deepEqual([sub.tileCol, sub.tileRow], [2, 6], 'starts outside the door');
+  run(os, 15, () => sub.doorway === undefined && sub.path.length === 0 && sub.tileRow < 4);
+  assert.ok(sub.tileRow < 4, 'walked in toward its parent');
+});
