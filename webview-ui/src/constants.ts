@@ -75,6 +75,10 @@ export const CONVERSATION_QUEUE_MAX = 3;
 /** How long a sender waits beside the recipient's destination for it to
  *  arrive before re-aiming at the recipient's live tile. */
 export const CONVERSATION_WAIT_SEC = 8;
+/** A finished sub-agent walks to its lead and says this before vanishing. */
+export const SUBAGENT_REPORT_PHRASE = 'Klart!';
+/** ...but vanishes anyway after this long, should it not get there. */
+export const SUBAGENT_REPORT_MAX_SEC = 20;
 /** CSS px the talk bubble sits above the point the activity label hangs from,
  *  so it clears the label instead of covering it. */
 export const CONVERSATION_BUBBLE_LIFT_PX = 40;

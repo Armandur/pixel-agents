@@ -272,6 +272,9 @@ export interface Character {
   crowned?: boolean;
   /** Seed of its generated figure (getCharacterSprites); absent = palette character. */
   figure?: string;
+  /** A finished sub-agent on its way to report to its lead: seconds left
+   *  before it vanishes regardless (SUBAGENT_REPORT_MAX_SEC). */
+  reportTimer?: number;
   /** Walking over to another agent to deliver a message (replaces the FSM). */
   visit?: Visit;
   /** Further messages waiting for the current visit to end. */

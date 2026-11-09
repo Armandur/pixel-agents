@@ -72,3 +72,40 @@ test('with every seat taken a sub-agent stands instead of sitting on the floor',
   run(os, 2);
   assert.notEqual(sub.state, CharacterState.TYPE);
 });
+
+test('a finished sub-agent walks to its lead, says it is done, then vanishes', () => {
+  const os = office();
+  const id = os.addSubagent(1, 'tool-1');
+  const sub = os.characters.get(id)!;
+  run(os, 3); // seated at 'near'
+  os.removeSubagent(1, 'tool-1');
+  assert.equal(os.seats.get('near')!.assigned, false, 'its computer is free at once');
+  assert.equal(sub.matrixEffect, null, 'still here: it goes to report first');
+  assert.equal(sub.visit?.targetId, 1);
+  let said: string | undefined;
+  for (let t = 0; t < 15 && os.characters.has(id); t += 0.05) {
+    os.update(0.05);
+    if (sub.visit?.phase === 'talking') said = sub.visit.summary;
+  }
+  assert.equal(said, 'Klart!');
+  assert.equal(os.characters.has(id), false, 'gone after the report');
+});
+
+test('a sub-agent that cannot reach its lead vanishes after the report time-out', () => {
+  const os = office();
+  const id = os.addSubagent(1, 'tool-1');
+  os.removeSubagent(1, 'tool-1');
+  const sub = os.characters.get(id)!;
+  sub.reportTimer = 0.1;
+  sub.path = [];
+  run(os, 1);
+  assert.equal(os.characters.has(id), false);
+});
+
+test('when the lead itself is gone the sub-agent vanishes at once', () => {
+  const os = office();
+  const id = os.addSubagent(1, 'tool-1');
+  os.characters.get(1)!.matrixEffect = 'despawn';
+  os.removeSubagent(1, 'tool-1');
+  assert.equal(os.characters.get(id)!.matrixEffect, 'despawn');
+});

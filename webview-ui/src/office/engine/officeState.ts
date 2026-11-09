@@ -14,6 +14,8 @@ import {
   MAX_PET_ID_LENGTH,
   PET_HIT_HALF_WIDTH,
   PET_HIT_HEIGHT,
+  SUBAGENT_REPORT_MAX_SEC,
+  SUBAGENT_REPORT_PHRASE,
   WAITING_BUBBLE_DURATION_SEC,
 } from '../../constants.js';
 import { getAnimationFrames, getCatalogEntry, getOnStateType } from '../layout/furnitureCatalog.js';
@@ -867,10 +869,19 @@ export class OfficeState {
       if (ch.seatId) {
         const seat = this.seats.get(ch.seatId);
         if (seat) seat.assigned = false;
+        ch.seatId = null;
       }
-      // Start despawn animation — keep character in map for rendering
-      startMatrixEffect(ch, 'despawn');
       ch.bubbleType = null;
+      const lead = this.characters.get(parentAgentId);
+      if (lead && !lead.matrixEffect && !ch.matrixEffect) {
+        // Done: walk over to the lead and report before vanishing.
+        ch.isActive = false;
+        ch.reportTimer = SUBAGENT_REPORT_MAX_SEC;
+        this.startVisit(ch, { targetId: parentAgentId, summary: SUBAGENT_REPORT_PHRASE });
+      } else {
+        // Start despawn animation — keep character in map for rendering
+        startMatrixEffect(ch, 'despawn');
+      }
     }
     // Clean up tracking maps immediately so keys don't collide
     this.subagentIdMap.delete(key);
@@ -1447,11 +1458,19 @@ export class OfficeState {
         continue; // skip normal FSM while the effect is (or just was) active
       }
 
+      if (ch.reportTimer !== undefined && (ch.reportTimer -= dt) <= 0) {
+        ch.visit = undefined; // never got there: vanish where it stands
+        startMatrixEffect(ch, 'despawn');
+        continue;
+      }
       if (ch.visit) {
         // Delivering a message: the visit replaces the FSM until it ends.
         this.retargetVisit(ch);
         const target = this.characters.get(ch.visit.targetId);
-        if (advanceVisit(ch, target, dt, walkFrame) === 'done') {
+        const reported = advanceVisit(ch, target, dt, walkFrame) === 'done';
+        if (reported && ch.reportTimer !== undefined) {
+          startMatrixEffect(ch, 'despawn'); // a sub-agent's report is its last act
+        } else if (reported) {
           const next = ch.visitQueue?.shift();
           if (next) this.startVisit(ch, next);
         }

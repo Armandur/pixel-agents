@@ -125,6 +125,11 @@ export function ToolOverlay({
 
   // All character IDs
   const allIds = [...agents, ...subagentCharacters.map((s) => s.id)];
+  // A finished sub-agent reporting to its lead has left the sub-agent list
+  // but still says its line (see OfficeState.removeSubagent).
+  for (const c of officeState.characters.values()) {
+    if (c.reportTimer !== undefined && !allIds.includes(c.id)) allIds.push(c.id);
+  }
   // Pretend coffee-break chatter of agents mingling in the lounge (no real text).
   const loungeChat = loungeChatLines(officeState.characters.values());
 
@@ -185,7 +190,11 @@ export function ToolOverlay({
                 left: project.toScreenX(ch.x),
                 top:
                   project.toScreenY(ch.y + talkSittingOff - TOOL_OVERLAY_VERTICAL_OFFSET) -
-                  CONVERSATION_BUBBLE_LIFT_PX,
+                  // A reporting sub-agent shows no label: its bubble sits just
+                  // over its head, like the lounge chatter.
+                  (ch.reportTimer !== undefined
+                    ? LOUNGE_CHAT_BUBBLE_LIFT_PX
+                    : CONVERSATION_BUBBLE_LIFT_PX),
                 zIndex: OVERLAY_BUBBLE_Z_INDEX,
               }}
               data-testid="conversation-bubble"
@@ -229,8 +238,9 @@ export function ToolOverlay({
         }
 
         // Only show the label for hovered or selected agents (unless
-        // always-show is on) — the bubble renders regardless.
-        if (!alwaysShowOverlay && !isSelected && !isHovered) {
+        // always-show is on) — the bubble renders regardless. A reporting
+        // sub-agent has no work left to label: just its bubble.
+        if ((!alwaysShowOverlay && !isSelected && !isHovered) || ch.reportTimer !== undefined) {
           return bubbleNode && <Fragment key={id}>{bubbleNode}</Fragment>;
         }
 
