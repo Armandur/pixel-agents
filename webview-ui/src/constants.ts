@@ -108,17 +108,42 @@ export const LOUNGE_CHAT_TURN_MAX_SEC = 5;
  *  real talk bubble: an idle agent's label panel is usually hidden, so the
  *  bubble belongs just over the head. */
 export const LOUNGE_CHAT_BUBBLE_LIFT_PX = 0;
-/** Neutral coffee-break phrases for the pretend chat bubble. Never real session text. */
-export const LOUNGE_CHAT_PHRASES = [
-  'Kaffe?',
-  'Hur går det?',
-  'Haha',
-  'Mm, precis',
-  'Fika snart?',
-  'Jaså?',
-  'Visst',
-  '...',
-] as const;
+/**
+ * Small talk for the pretend chat in the lounge: short dialogues the two take
+ * turns through, line by line, opener first. Never real session text.
+ */
+export const LOUNGE_CHAT_DIALOGUES: ReadonlyArray<readonly string[]> = [
+  ['Kaffe?', 'Gärna!', 'Svart?', 'Alltid.'],
+  ['Hur går det?', 'Testerna är gröna.', 'Snyggt!'],
+  ['Fika snart?', 'Det är ju fika nu.', 'Stämmer.'],
+  ['Är det fredag?', 'Snart.', 'Då kör vi!'],
+  ['Hörde du om bugget?', 'Vilket då?', 'Det var en typo.', 'Klassiker.'],
+  ['Jag är slut på tokens.', 'Ta en kaka.', 'Det hjälper.'],
+  ['Mergade du?', 'Väntar på granskning.', 'Lycka till.'],
+  ['Någon har ätit min kaka.', 'Inte jag.', 'Hm.'],
+  ['Regnar det ute?', 'Vet inte.', 'Vi har inga fönster.', 'Just det.'],
+  ['Vem rörde main?', 'Inte jag!', 'Bra.'],
+  ['Lunch?', 'Jag har matlåda.', 'Smart.'],
+  ['Kör vi ett parti?', 'Sen kanske.', 'Okej.'],
+  ['Mycket att göra?', 'Lagom.', 'Skönt.'],
+  ['Såg du dirigenten?', 'Den har krona nu.', 'Fint värre.'],
+  ['Jag fick en ny uppgift.', 'Stor?', 'Den växer.'],
+  ['Testa mer, sa han.', 'Gjorde du?', 'Självklart.'],
+  ['Behöver du hjälp?', 'Nej tack.', 'Säg till.'],
+  ['Vad jobbar du med?', 'Hemligt.', 'Spännande.'],
+  ['Det här kaffet...', 'Starkt?', 'Mycket.'],
+  ['Pausar du?', 'En liten stund.', 'Väl förtjänt.'],
+  ['Har du pushat?', 'Inte än.', 'Vänta på ok.', 'Precis.'],
+  ['Snygg tröja.', 'Tack!', 'Ny?', 'Genererad.'],
+  ['Lint klagar igen.', 'Semikolon?', 'Em-dash.', 'Aj.'],
+  ['God morgon!', 'Är det morgon?', 'Någonstans.'],
+  ['Vad tycker du?', 'Om vad?', 'Om allt.', 'Det är bra.'],
+  ['Kör du Sonnet?', 'Opus idag.', 'Lyxigt.'],
+  ['Hoppas det går bra.', 'Det gör det.', 'Bra.'],
+  ['Någon i whac?', 'Mullvadarna vinner.', 'Som vanligt.'],
+  ['Jag skrev ett test.', 'Föll det?', 'Först, ja.', 'Som det ska.'],
+  ['Mm, precis.', 'Haha.', 'Jaså?'],
+];
 /** A crowned agent's name on its card. */
 export const CROWNED_NAME_COLOR = '#ffd700';
 export const GHOST_PREVIEW_SPRITE_ALPHA = 0.5;

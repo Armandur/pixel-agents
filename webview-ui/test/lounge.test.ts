@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 import { test } from 'vitest';
 
 import {
-  LOUNGE_CHAT_PHRASES,
+  LOUNGE_CHAT_DIALOGUES,
   LOUNGE_CHAT_TURN_MAX_SEC,
   LOUNGE_CHAT_TURN_MIN_SEC,
   LOUNGE_IDLE_SEC,
@@ -307,28 +307,42 @@ function mingle() {
   return { me, partner, step };
 }
 
-test('a mingle fakes a chat: the two take turns, a stock phrase each time', () => {
+test('a mingle fakes a chat: the two take turns through a dialogue, line by line', () => {
   const { me, partner, step } = mingle();
   assert.equal(loungeChatLines([me, partner]).size, 0, 'nothing before arrival');
-  step(0.05, () => 0); // arrives; random 0 → self opens, first phrase, shortest turn
+  step(0.05, () => 0); // arrives; random 0 → self opens dialogue 0, shortest turn
+  const d0 = LOUNGE_CHAT_DIALOGUES[0];
   assert.equal(me.lounge!.chat!.speakerId, 1);
-  assert.equal(me.lounge!.chat!.phrase, LOUNGE_CHAT_PHRASES[0]);
   let lines = loungeChatLines([me, partner]);
   assert.deepEqual([...lines.keys()], [1], 'only the speaker has a bubble');
-  assert.equal(lines.get(1), LOUNGE_CHAT_PHRASES[0]);
+  assert.equal(lines.get(1), d0[0]);
 
   step(LOUNGE_CHAT_TURN_MIN_SEC - 0.5, () => 0);
   assert.equal(me.lounge!.chat!.speakerId, 1, 'turn not over yet');
-  step(1, () => 0.99); // turn over; other side speaks, last phrase
-  assert.equal(me.lounge!.chat!.speakerId, 2);
+  step(1, () => 0); // turn over: the other side answers with the next line
   lines = loungeChatLines([me, partner]);
   assert.deepEqual([...lines.keys()], [2]);
-  assert.equal(lines.get(2), LOUNGE_CHAT_PHRASES[LOUNGE_CHAT_PHRASES.length - 1]);
+  assert.equal(lines.get(2), d0[1]);
   assert.ok(me.lounge!.chat!.timer <= LOUNGE_CHAT_TURN_MAX_SEC);
+});
 
-  step(LOUNGE_CHAT_TURN_MAX_SEC + 1, () => 0); // back to the first, a phrase that differs from the last
-  assert.equal(me.lounge!.chat!.speakerId, 1);
-  assert.notEqual(me.lounge!.chat!.phrase, LOUNGE_CHAT_PHRASES[LOUNGE_CHAT_PHRASES.length - 1]);
+test('a finished dialogue gives way to another one, never the same twice in a row', () => {
+  const { me, step } = mingle();
+  step(0.05, () => 0);
+  const first = me.lounge!.chat!.dialogue;
+  for (let i = 0; i < LOUNGE_CHAT_DIALOGUES[first].length; i++)
+    step(LOUNGE_CHAT_TURN_MAX_SEC + 0.1, () => 0);
+  const chat = me.lounge!.chat!;
+  assert.notEqual(chat.dialogue, first);
+  assert.equal(chat.line, 0);
+  assert.equal(chat.phrase, LOUNGE_CHAT_DIALOGUES[chat.dialogue][0]);
+});
+
+test('every dialogue line is short enough for the bubble', () => {
+  for (const d of LOUNGE_CHAT_DIALOGUES) {
+    assert.ok(d.length >= 2, `${d[0]}: a dialogue has at least two lines`);
+    for (const line of d) assert.ok(line.length <= 24, `"${line}" is too long`);
+  }
 });
 
 test('no chat bubble unless a mingle is on, and none over a real conversation bubble', () => {

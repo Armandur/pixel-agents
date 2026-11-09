@@ -1,5 +1,5 @@
 import {
-  LOUNGE_CHAT_PHRASES,
+  LOUNGE_CHAT_DIALOGUES,
   LOUNGE_CHAT_TURN_MAX_SEC,
   LOUNGE_CHAT_TURN_MIN_SEC,
   LOUNGE_IDLE_SEC,
@@ -29,6 +29,9 @@ export interface LoungeChat {
   phrase: string;
   /** Seconds left of this turn. */
   timer: number;
+  /** Which LOUNGE_CHAT_DIALOGUES entry, and which line of it, is being said. */
+  dialogue: number;
+  line: number;
 }
 
 /** What a lounging character is doing. Replaces the FSM while set. */
@@ -99,26 +102,34 @@ export function chooseActivity(
   return weighted.find(([, w]) => w > 0)![0];
 }
 
-function chatTurn(speakerId: number, previous: string | undefined, random: () => number) {
-  const pool = LOUNGE_CHAT_PHRASES.filter((p) => p !== previous);
-  return {
-    speakerId,
-    phrase: pool[Math.floor(random() * pool.length)],
-    timer:
-      LOUNGE_CHAT_TURN_MIN_SEC + random() * (LOUNGE_CHAT_TURN_MAX_SEC - LOUNGE_CHAT_TURN_MIN_SEC),
-  };
+function turnSeconds(random: () => number): number {
+  return (
+    LOUNGE_CHAT_TURN_MIN_SEC + random() * (LOUNGE_CHAT_TURN_MAX_SEC - LOUNGE_CHAT_TURN_MIN_SEC)
+  );
 }
 
-/** Start the pretend chat when a mingle begins; either side may open. */
+/** Start the pretend chat when a mingle begins: either side opens a random dialogue. */
 export function startLoungeChat(
   selfId: number,
   partnerId: number,
   random: () => number,
 ): LoungeChat {
-  return chatTurn(random() < 0.5 ? selfId : partnerId, undefined, random);
+  const speakerId = random() < 0.5 ? selfId : partnerId;
+  const dialogue = Math.floor(random() * LOUNGE_CHAT_DIALOGUES.length);
+  return {
+    speakerId,
+    dialogue,
+    line: 0,
+    phrase: LOUNGE_CHAT_DIALOGUES[dialogue][0],
+    timer: turnSeconds(random),
+  };
 }
 
-/** Count the turn down; when it ends the other side speaks a fresh phrase. */
+/**
+ * Count the turn down; when it ends the other side says the dialogue's next
+ * line. A finished dialogue gives way to another one (never the same twice
+ * in a row), opened by whoever's turn it is.
+ */
 export function advanceLoungeChat(
   chat: LoungeChat,
   selfId: number,
@@ -128,10 +139,15 @@ export function advanceLoungeChat(
 ): void {
   chat.timer -= dt;
   if (chat.timer > 0) return;
-  Object.assign(
-    chat,
-    chatTurn(chat.speakerId === selfId ? partnerId : selfId, chat.phrase, random),
-  );
+  chat.speakerId = chat.speakerId === selfId ? partnerId : selfId;
+  chat.line += 1;
+  if (chat.line >= LOUNGE_CHAT_DIALOGUES[chat.dialogue].length) {
+    const next = Math.floor(random() * (LOUNGE_CHAT_DIALOGUES.length - 1));
+    chat.dialogue = next >= chat.dialogue ? next + 1 : next;
+    chat.line = 0;
+  }
+  chat.phrase = LOUNGE_CHAT_DIALOGUES[chat.dialogue][chat.line];
+  chat.timer = turnSeconds(random);
 }
 
 /**
