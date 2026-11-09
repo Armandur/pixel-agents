@@ -32,7 +32,13 @@ import {
 } from '../sprites/carpetTiles.js';
 import { getPetName, getPetSprites } from '../sprites/petSpriteData.js';
 import { getCachedSprite } from '../sprites/spriteCache.js';
-import type { AreaDefinition, CarpetTile, SpriteData, TileType as TileTypeVal } from '../types.js';
+import type {
+  AreaDefinition,
+  AreaRole,
+  CarpetTile,
+  SpriteData,
+  TileType as TileTypeVal,
+} from '../types.js';
 import { EditTool } from '../types.js';
 import { getWallSetCount, getWallSetPreviewSprite } from '../wallTiles.js';
 import { FurnitureFilterRow } from './FurnitureFilterRow.js';
@@ -86,7 +92,7 @@ interface EditorToolbarProps {
   onRemoveArea: (label: string) => void;
   onRenameArea: (oldLabel: string, newLabel: string) => void;
   onAreaColorChange: (label: string, color: string) => void;
-  onAreaRoleChange: (label: string, role: 'lounge' | undefined) => void;
+  onAreaRoleChange: (label: string, role: AreaRole | undefined) => void;
   onAreaMappingChange: (directoryName: string, areaLabel: string, action: 'add' | 'remove') => void;
   /** Extra controls under the selected item's colour (e.g. a chair's owner). */
   selectionExtra?: ReactNode;
@@ -489,6 +495,12 @@ export function EditorToolbar({
                   onToggleLounge={() =>
                     onAreaRoleChange(area.label, area.role === 'lounge' ? undefined : 'lounge')
                   }
+                  onToggleAttention={() =>
+                    onAreaRoleChange(
+                      area.label,
+                      area.role === 'attention' ? undefined : 'attention',
+                    )
+                  }
                   directories={directories}
                   areaMappings={areaMappings}
                   onAreaMappingChange={onAreaMappingChange}
@@ -795,6 +807,7 @@ function AreaCard({
   onRemove,
   onColorChange,
   onToggleLounge,
+  onToggleAttention,
   directories,
   areaMappings,
   onAreaMappingChange,
@@ -806,6 +819,7 @@ function AreaCard({
   onRemove: () => void;
   onColorChange: (color: string) => void;
   onToggleLounge: () => void;
+  onToggleAttention: () => void;
   directories: { name: string; path: string }[];
   areaMappings: Record<string, string[]>;
   onAreaMappingChange: (directoryName: string, areaLabel: string, action: 'add' | 'remove') => void;
@@ -907,6 +921,20 @@ function AreaCard({
         title="Idle agents spend their break here"
       >
         {area.role === 'lounge' ? 'Lounge: on' : 'Lounge: off'}
+      </Button>
+
+      {/* Attention role: agents waiting on Rasmus stand here (väntezonen). */}
+      <Button
+        variant={area.role === 'attention' ? 'active' : 'default'}
+        size="sm"
+        onClick={(e) => {
+          e?.stopPropagation();
+          onToggleAttention();
+        }}
+        aria-pressed={area.role === 'attention'}
+        title="Agents waiting for your answer or approval stand here"
+      >
+        {area.role === 'attention' ? 'Waiting zone: on' : 'Waiting zone: off'}
       </Button>
 
       <div className="flex flex-col gap-2 max-h-80 overflow-y-auto pixel-scrollbar">

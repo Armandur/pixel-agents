@@ -741,3 +741,6 @@ export const ACHIEVEMENT_LABELS: Record<string, string> = {
   marathon: 'Maratonpass',
   'night-owl': 'Nattuggla',
 };
+
+/** An agent waiting on Rasmus this long walks to the attention Area (a quick approval keeps it at its desk). */
+export const ATTENTION_DELAY_SEC = 5;

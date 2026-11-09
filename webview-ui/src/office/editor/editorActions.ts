@@ -9,6 +9,7 @@ import type {
   PlacedFurniture,
   TileType as TileTypeVal,
 } from '../types.js';
+import type { AreaRole } from '../types.js';
 import { MAX_COLS, MAX_ROWS, TileType } from '../types.js';
 
 /** Paint a single tile with pattern and color. Returns new layout (immutable). */
@@ -734,7 +735,7 @@ export function updateAreaColor(layout: OfficeLayout, label: string, color: stri
 export function setAreaRole(
   layout: OfficeLayout,
   label: string,
-  role: 'lounge' | undefined,
+  role: AreaRole | undefined,
 ): OfficeLayout {
   const existing = layout.areas ?? [];
   const idx = existing.findIndex((a) => a.label === label);

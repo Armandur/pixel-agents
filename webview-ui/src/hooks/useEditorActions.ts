@@ -48,6 +48,7 @@ import type {
   PlacedPet,
   TileType as TileTypeVal,
 } from '../office/types.js';
+import type { AreaRole } from '../office/types.js';
 import { EditTool } from '../office/types.js';
 import { TileType } from '../office/types.js';
 import { transport } from '../transport/index.js';
@@ -103,7 +104,7 @@ interface EditorActions extends Omit<FurnitureColorActions, 'pickColorAt'> {
   handleRemoveArea: (label: string) => void;
   handleRenameArea: (oldLabel: string, newLabel: string) => void;
   handleAreaColorChange: (label: string, color: string) => void;
-  handleAreaRoleChange: (label: string, role: 'lounge' | undefined) => void;
+  handleAreaRoleChange: (label: string, role: AreaRole | undefined) => void;
 }
 
 /** Default integer zoom (device pixels per sprite pixel) for a fresh session.
@@ -341,7 +342,7 @@ export function useEditorActions(
   );
 
   const handleAreaRoleChange = useCallback(
-    (label: string, role: 'lounge' | undefined) => {
+    (label: string, role: AreaRole | undefined) => {
       const layout = getOfficeState().getLayout();
       const next = setAreaRole(layout, label, role);
       if (next !== layout) applyEdit(next);

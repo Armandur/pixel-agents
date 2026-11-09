@@ -43,6 +43,13 @@ import type {
   TileType as TileTypeVal,
 } from '../types.js';
 import { CharacterState, Direction, PetState, TILE_SIZE } from '../types.js';
+import {
+  advanceAttention,
+  needsRasmus,
+  pickAttentionTile,
+  roleTileKeys,
+  wantsAttention,
+} from './attention.js';
 import { animationFrameFor, collectAutoOnTiles } from './autoState.js';
 import { createCharacter, updateCharacter, walkFrame } from './characters.js';
 import type { VisitRequest } from './conversation.js';
@@ -125,6 +132,14 @@ export class OfficeState {
   private readonly idleSinceById = new Map<number, number>();
   /** Lounge tile keys, cached per layout object (see loungeKeys()). */
   private loungeCache: { layout: OfficeLayout; keys: Set<string> } | null = null;
+  /** Attention Area tile keys, cached per layout object (see attentionKeys()). */
+  private attentionCache: { layout: OfficeLayout; keys: Set<string> } | null = null;
+  private walkableKeyCache: {
+    tiles: Array<{ col: number; row: number }>;
+    keys: Set<string>;
+  } | null = null;
+  /** Since when (ms) each agent has needed Rasmus without a break. */
+  private attentionSince = new Map<number, number>();
   /** Placed games, cached per layout object (see loungeGames()). */
   private gamesCache: { layout: OfficeLayout; games: LoungeGame[] } | null = null;
   private electronicsCache: { layout: OfficeLayout; tiles: Set<string> } | null = null;
@@ -1522,6 +1537,59 @@ export class OfficeState {
     return true;
   }
 
+  /** "col,row" keys of the attention Area (väntezonen), cached per layout object. */
+  private attentionKeys(): Set<string> {
+    if (this.attentionCache?.layout !== this.layout) {
+      this.attentionCache = { layout: this.layout, keys: roleTileKeys(this.layout, 'attention') };
+    }
+    return this.attentionCache.keys;
+  }
+
+  /**
+   * Waiting-on-Rasmus step for one character. Returns true when the zone
+   * drove it this frame (skip the lounge and the FSM). An answer or an
+   * approval clears it, and the FSM walks the agent back to its seat.
+   */
+  private updateAttention(ch: Character, dt: number, now: number): boolean {
+    const keys = this.attentionKeys();
+    const needs = keys.size > 0 && needsRasmus(ch);
+    if (!needs) {
+      this.attentionSince.delete(ch.id);
+      if (ch.attention) {
+        ch.attention = undefined;
+        ch.path = [];
+      }
+      return false;
+    }
+    if (!this.attentionSince.has(ch.id)) this.attentionSince.set(ch.id, now);
+    if (!ch.attention) {
+      if (!wantsAttention(this.attentionSince.get(ch.id), now)) return false;
+      if (ch.state === CharacterState.WALK) return false; // don't cut a walk short
+      const spot = pickAttentionTile(ch, keys, this.walkableKeys(), this.characters.values());
+      if (!spot) return false; // the zone is full: wait where it is
+      const path = this.withOwnSeatUnblocked(ch, () =>
+        findPath(ch.tileCol, ch.tileRow, spot.col, spot.row, this.tileMap, this.blockedTiles),
+      );
+      if (path.length === 0 && (ch.tileCol !== spot.col || ch.tileRow !== spot.row)) return false;
+      if (ch.lounge) this.leaveLounge(ch);
+      ch.attention = { ...spot, arrived: false };
+      ch.path = path;
+      ch.moveProgress = 0;
+    }
+    advanceAttention(ch, dt, walkFrame);
+    return true;
+  }
+
+  private walkableKeys(): Set<string> {
+    if (this.walkableKeyCache?.tiles !== this.walkableTiles) {
+      this.walkableKeyCache = {
+        tiles: this.walkableTiles,
+        keys: new Set(this.walkableTiles.map((t) => `${t.col},${t.row}`)),
+      };
+    }
+    return this.walkableKeyCache.keys;
+  }
+
   /** Stop lounging, turning a seated chat partner back to its seat first. */
   private leaveLounge(ch: Character): void {
     const partnerId = ch.lounge?.partnerId;
@@ -1708,7 +1776,11 @@ export class OfficeState {
           const next = ch.visitQueue?.shift();
           if (next) this.startVisit(ch, next);
         }
-      } else if (!heldForTalk.has(ch.id) && !this.updateLounge(ch, dt, now)) {
+      } else if (
+        !heldForTalk.has(ch.id) &&
+        !this.updateAttention(ch, dt, now) &&
+        !this.updateLounge(ch, dt, now)
+      ) {
         // Temporarily unblock own seat so character can pathfind to it
         this.withOwnSeatUnblocked(ch, () =>
           updateCharacter(ch, dt, this.walkableTiles, this.seats, this.tileMap, this.blockedTiles),

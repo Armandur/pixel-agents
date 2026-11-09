@@ -25,6 +25,7 @@ export type TileType = (typeof TileType)[keyof typeof TileType];
 /** Re-export ColorValue for consumers that import color types from office/types */
 export type { ColorValue } from '../components/ui/types.js';
 import type { ColorValue } from '../components/ui/types.js';
+import type { AttentionState } from './engine/attention.js';
 import type { Visit, VisitRequest } from './engine/conversation.js';
 import type { LoungeState } from './engine/lounge.js';
 
@@ -160,13 +161,17 @@ export interface CarpetTile {
 // AREAS — translucent named overlays for Directory ↔ seat preference.
 // ─────────────────────────────────────────────────────────────────────────────
 
+export type AreaRole = 'lounge' | 'attention';
+
 export interface AreaDefinition {
   /** Stable label used as the FK in `areaTiles` and `OfficeState.areaMappings`. */
   label: string;
   /** Hex color (e.g. "#ff6b6b"). RGB only — alpha applied at render time. */
   color: string;
-  /** 'lounge': idle agents gather here (see office/engine/lounge.ts). Absent = a plain Area. */
-  role?: 'lounge';
+  /** 'lounge': idle agents gather here (see office/engine/lounge.ts).
+   *  'attention': agents waiting on Rasmus stand here (office/engine/attention.ts).
+   *  Absent = a plain Area. */
+  role?: AreaRole;
 }
 
 export interface OfficeLayout {
@@ -287,6 +292,8 @@ export interface Character {
   visitQueue?: VisitRequest[];
   /** Spending idle time in the lounge (replaces the FSM while set). */
   lounge?: LoungeState;
+  /** Waiting on Rasmus: its spot in the attention Area (office/engine/attention.ts). */
+  attention?: AttentionState;
   /** ID of the lead agent (set on teammates) */
   leadAgentId?: number;
   /** True when lead spawns teammates via tmux (run_in_background Agent calls) */
