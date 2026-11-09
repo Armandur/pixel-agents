@@ -486,6 +486,12 @@ export class HookEventHandler {
    * to serve as a confirmation event for pending external sessions.
    */
   private handlePostToolUse(agent: AgentState, agentId: number): void {
+    // A finished tool settles any approval it waited for: drop the bubble
+    // now rather than at the next tool start.
+    if (agent.permissionSent) {
+      agent.permissionSent = false;
+      this.agents.broadcast({ type: 'agentToolPermissionClear', id: agentId });
+    }
     if (agent.currentHookToolId) {
       // Suppress tool display when lead has inline teammates (see handlePreToolUse)
       if (!hasInlineTeammates(agentId, this.agents)) {

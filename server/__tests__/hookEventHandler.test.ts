@@ -87,6 +87,28 @@ describe('HookEventHandler', () => {
     expect(msg?.id).toBe(1);
   });
 
+  it('a finished tool clears the approval bubble at once', () => {
+    agents.set(1, createTestAgent({ id: 1 }));
+    handler.registerAgent('sess-1', 1);
+    handler.handleEvent('claude', {
+      hook_event_name: 'PreToolUse',
+      session_id: 'sess-1',
+      tool_name: 'Bash',
+      tool_input: { command: 'ls' },
+    });
+    handler.handleEvent('claude', { hook_event_name: 'PermissionRequest', session_id: 'sess-1' });
+    handler.handleEvent('claude', {
+      hook_event_name: 'PostToolUse',
+      session_id: 'sess-1',
+      tool_name: 'Bash',
+    });
+    const types = mockWebview.messages.map((m) => m.type);
+    expect(types.lastIndexOf('agentToolPermissionClear')).toBeGreaterThan(
+      types.indexOf('agentToolPermission'),
+    );
+    expect(agents.get(1)!.permissionSent).toBe(false);
+  });
+
   it('PermissionRequest cancels permission timer', () => {
     const agent = createTestAgent({ id: 1 });
     agents.set(1, agent);

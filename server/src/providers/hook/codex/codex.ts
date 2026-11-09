@@ -1,6 +1,7 @@
 import type { AgentEvent, HookProvider } from '../../../../../core/src/provider.js';
 import { claudeProvider } from '../claude/claude.js';
 import { readCodexQuota } from './codexQuota.js';
+import { codexAutoReviewed } from './codexReview.js';
 
 /**
  * Codex CLI (0.164+) as an observe-only hook provider.
@@ -12,6 +13,8 @@ import { readCodexQuota } from './codexQuota.js';
  * - `transcript_path` is dropped. Codex rollout files are not Claude JSONL, so
  *   the session is adopted hooks-only and its state comes from hook events.
  * - `Interrupt` (Esc in the TUI) ends the turn.
+ * - `PermissionRequest` is dropped when the session's approvals reviewer is
+ *   Codex's own model (`auto_review`): nobody is asked, so no approval bubble.
  * - Hooks are never installed by Pixel Agents. They are owned by whatever
  *   forwards Codex events here (an external status layer), so installHooks is
  *   a no-op and the provider is kept out of the consent/install loop.
@@ -23,6 +26,9 @@ function normalizeHookEvent(
     const sessionId = raw.session_id;
     if (typeof sessionId !== 'string' || !sessionId) return null;
     return { sessionId, event: { kind: 'turnEnd' } };
+  }
+  if (raw.hook_event_name === 'PermissionRequest' && codexAutoReviewed(raw.transcript_path)) {
+    return null;
   }
   const { transcript_path: _ignored, ...rest } = raw;
   return claudeProvider.normalizeHookEvent(rest);

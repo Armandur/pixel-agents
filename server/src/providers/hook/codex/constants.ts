@@ -5,3 +5,7 @@ export const CODEX_QUOTA_TAIL_BYTES = 256 * 1024;
 /** How many of the newest rollouts are tried before giving up (a fresh
  *  session has no `token_count` record yet). */
 export const CODEX_QUOTA_MAX_ROLLOUTS = 5;
+/** Codex's config file, relative to the home directory. */
+export const CODEX_CONFIG_FILE = '.codex/config.toml';
+/** How much of a rollout's end is read to find the session's approvals reviewer. */
+export const CODEX_REVIEW_TAIL_BYTES = 1024 * 1024;
