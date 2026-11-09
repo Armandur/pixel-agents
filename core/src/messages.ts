@@ -292,6 +292,7 @@ export interface FurnitureAssetMessage {
   tags?: string[];
   playSpots?: PlaySpot[];
   minPlayers?: number;
+  door?: boolean;
   autoTile?: boolean;
   rotationScheme?: string;
   animationGroup?: string;

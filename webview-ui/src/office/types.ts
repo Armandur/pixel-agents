@@ -125,6 +125,8 @@ export interface FurnitureCatalogEntry {
   /** A game idle agents play (see office/engine/loungePlay.ts). */
   playSpots?: Array<{ dc: number; dr: number; dir: 'up' | 'down' | 'left' | 'right' }>;
   minPlayers?: number;
+  /** A door characters walk through (see office/engine/entrance.ts). */
+  door?: boolean;
 }
 
 export interface PlacedFurniture {
@@ -277,6 +279,8 @@ export interface Character {
   /** A finished sub-agent on its way to report to its lead: seconds left
    *  before it vanishes regardless (SUBAGENT_REPORT_MAX_SEC). */
   reportTimer?: number;
+  /** Coming in or going out through the entrance (engine/entrance.ts). */
+  doorway?: { phase: 'appear' | 'enter' | 'toDoor' | 'exit'; timer: number };
   /** Walking over to another agent to deliver a message (replaces the FSM). */
   visit?: Visit;
   /** Further messages waiting for the current visit to end. */

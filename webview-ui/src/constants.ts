@@ -79,6 +79,12 @@ export const CONVERSATION_WAIT_SEC = 8;
 export const SUBAGENT_REPORT_PHRASE = 'Klart!';
 /** ...but vanishes anyway after this long, should it not get there. */
 export const SUBAGENT_REPORT_MAX_SEC = 20;
+/** The entrance door: seconds to swing fully open (or shut). */
+export const DOOR_OPEN_SEC = 0.3;
+/** A leaver that has not reached the door by now vanishes where it is. */
+export const DOOR_EXIT_TIMEOUT_SEC = 30;
+/** A finished sub-agent walks out only when the door is at most this many tiles away. */
+export const SUBAGENT_DOOR_MAX_TILES = 40;
 /** CSS px the talk bubble sits above the point the activity label hangs from,
  *  so it clears the label instead of covering it. */
 export const CONVERSATION_BUBBLE_LIFT_PX = 40;

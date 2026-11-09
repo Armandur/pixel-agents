@@ -1646,6 +1646,9 @@ components:
         minPlayers:
           type: integer
           description: Players needed to start the game (default 1).
+        door:
+          type: boolean
+          description: A door characters walk through; its ON frames are the opening, picked by how open it is.
         autoTile:
           type: boolean
           description: A 1x1 item that joins with same-type neighbours; its pieces arrive as sprites `<id>#<mask>` (N=1, E=2, S=4, W=8).

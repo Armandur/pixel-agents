@@ -70,8 +70,22 @@ function packAndTags(manifest: {
   tags?: unknown;
   playSpots?: unknown;
   minPlayers?: unknown;
-}): { pack?: string; tags?: string[]; playSpots?: PlaySpot[]; minPlayers?: number } {
-  const out: { pack?: string; tags?: string[]; playSpots?: PlaySpot[]; minPlayers?: number } = {};
+  door?: unknown;
+}): {
+  pack?: string;
+  tags?: string[];
+  playSpots?: PlaySpot[];
+  minPlayers?: number;
+  door?: boolean;
+} {
+  const out: {
+    pack?: string;
+    tags?: string[];
+    playSpots?: PlaySpot[];
+    minPlayers?: number;
+    door?: boolean;
+  } = {};
+  if (manifest.door === true) out.door = true;
   if (typeof manifest.pack === 'string' && manifest.pack) out.pack = manifest.pack;
   if (Array.isArray(manifest.tags)) {
     const tags = manifest.tags.filter((t): t is string => typeof t === 'string' && t !== '');

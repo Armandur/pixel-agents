@@ -14,6 +14,7 @@ import {
   MAX_PET_ID_LENGTH,
   PET_HIT_HALF_WIDTH,
   PET_HIT_HEIGHT,
+  SUBAGENT_DOOR_MAX_TILES,
   SUBAGENT_REPORT_MAX_SEC,
   SUBAGENT_REPORT_PHRASE,
   WAITING_BUBBLE_DURATION_SEC,
@@ -45,6 +46,17 @@ import { animationFrameFor, collectAutoOnTiles } from './autoState.js';
 import { createCharacter, updateCharacter, walkFrame } from './characters.js';
 import type { VisitRequest } from './conversation.js';
 import { advanceVisit, beginVisit, requestVisit, visitDestination } from './conversation.js';
+import type { Entrance } from './entrance.js';
+import {
+  advanceDoorway,
+  advanceOpenness,
+  beginEntering,
+  beginLeaving,
+  doorFrame,
+  doorWanted,
+  findEntrance,
+  isLeaving,
+} from './entrance.js';
 import type { LoungeContext } from './lounge.js';
 import {
   advanceLounge,
@@ -113,6 +125,11 @@ export class OfficeState {
   /** Placed games, cached per layout object (see loungeGames()). */
   private gamesCache: { layout: OfficeLayout; games: LoungeGame[] } | null = null;
   private electronicsCache: { layout: OfficeLayout; tiles: Set<string> } | null = null;
+  /** The entrance door, cached per layout object (see entrance()). */
+  private entranceCache: { layout: OfficeLayout; entrance: Entrance | null } | null = null;
+  /** How open the entrance door is (0 shut … 1 open), and the frame it shows. */
+  private doorOpenness = 0;
+  private doorFrameShown = 0;
   hoveredTile: { col: number; row: number } | null = null;
   /** Maps "parentId:toolId" → sub-agent character ID (negative) */
   subagentIdMap: Map<string, number> = new Map();
@@ -218,6 +235,7 @@ export class OfficeState {
         const seat = this.seats.get(ch.seatId)!;
         if (!seat.assigned) {
           seat.assigned = true;
+          if (ch.doorway) continue; // coming in through the door: let it walk
           // Snap character to seat position
           ch.tileCol = seat.seatCol;
           ch.tileRow = seat.seatRow;
@@ -337,6 +355,49 @@ export class OfficeState {
   }
 
   /** Collect every tile occupied by electronics furniture (PCs, monitors, etc.). */
+  private entrance(): Entrance | null {
+    if (this.entranceCache?.layout !== this.layout) {
+      this.entranceCache = { layout: this.layout, entrance: findEntrance(this.layout) };
+      this.doorOpenness = 0;
+    }
+    return this.entranceCache.entrance;
+  }
+
+  /**
+   * Walk a character out through the entrance; false when there is none, it
+   * is farther than `maxTiles`, or out of reach (the caller then despawns it
+   * where it stands).
+   */
+  private leaveViaDoor(ch: Character, maxTiles = Infinity): boolean {
+    const e = this.entrance();
+    if (!e) return false;
+    const atDoor = ch.tileCol === e.col && ch.tileRow === e.insideRow;
+    const path = atDoor
+      ? []
+      : this.withOwnSeatUnblocked(ch, () =>
+          findPath(ch.tileCol, ch.tileRow, e.col, e.insideRow, this.tileMap, this.blockedTiles),
+        );
+    if ((!atDoor && path.length === 0) || path.length > maxTiles) return false;
+    if (ch.lounge) this.leaveLounge(ch);
+    ch.visit = undefined;
+    ch.visitQueue = undefined;
+    ch.reportTimer = undefined;
+    ch.path = path;
+    beginLeaving(ch);
+    return true;
+  }
+
+  /** A newcomer that has stepped inside walks on to its seat. */
+  private walkToSeat(ch: Character): void {
+    const seat = ch.seatId ? this.seats.get(ch.seatId) : undefined;
+    if (!seat) return;
+    ch.path = this.withOwnSeatUnblocked(ch, () =>
+      findPath(ch.tileCol, ch.tileRow, seat.seatCol, seat.seatRow, this.tileMap, this.blockedTiles),
+    );
+    ch.moveProgress = 0;
+    ch.state = ch.path.length > 0 ? CharacterState.WALK : CharacterState.IDLE;
+  }
+
   /** buildElectronicsTileSet, cached per layout object (auto-state runs often). */
   private electronicsTiles(): Set<string> {
     if (this.electronicsCache?.layout !== this.layout) {
@@ -572,6 +633,10 @@ export class OfficeState {
       ch.directoryName = directoryName;
     }
     if (!skipSpawnEffect) {
+      // A newcomer materializes in the entrance doorway and walks in (a
+      // teammate placed beside its lead appears there, as before).
+      const e = nearAgentId === undefined ? this.entrance() : null;
+      if (e) beginEntering(ch, e);
       startMatrixEffect(ch, 'spawn');
     }
     ch.crowned = this.crownedAgentIds.has(id);
@@ -659,17 +724,19 @@ export class OfficeState {
   removeAgent(id: number): void {
     const ch = this.characters.get(id);
     if (!ch) return;
-    if (ch.matrixEffect === 'despawn') return; // already despawning
-    // Free seat and clear selection immediately
+    if (ch.matrixEffect === 'despawn' || isLeaving(ch)) return; // already on its way out
+    if (this.selectedAgentId === id) this.selectedAgentId = null;
+    if (this.cameraFollowId === id) this.cameraFollowId = null;
+    ch.bubbleType = null;
+    // Out through the entrance when there is one, else despawn where it is.
+    // The path is found before the seat is freed (the seat tile is blocked).
+    const left = this.leaveViaDoor(ch);
     if (ch.seatId) {
       const seat = this.seats.get(ch.seatId);
       if (seat) seat.assigned = false;
+      ch.seatId = null;
     }
-    if (this.selectedAgentId === id) this.selectedAgentId = null;
-    if (this.cameraFollowId === id) this.cameraFollowId = null;
-    // Start despawn animation instead of immediate delete
-    startMatrixEffect(ch, 'despawn');
-    ch.bubbleType = null;
+    if (!left) startMatrixEffect(ch, 'despawn');
     this.rebuildFurnitureInstances(); // its screen goes dark with it
   }
 
@@ -876,7 +943,7 @@ export class OfficeState {
       }
       ch.bubbleType = null;
       const lead = this.characters.get(parentAgentId);
-      if (lead && !lead.matrixEffect && !ch.matrixEffect) {
+      if (lead && !lead.matrixEffect && !isLeaving(lead) && !ch.matrixEffect) {
         // Done: walk over to the lead and report before vanishing.
         ch.isActive = false;
         ch.reportTimer = SUBAGENT_REPORT_MAX_SEC;
@@ -961,7 +1028,8 @@ export class OfficeState {
       autoOnTiles.add(tile);
     }
 
-    if (autoOnTiles.size === 0) {
+    const door = this.entrance();
+    if (autoOnTiles.size === 0 && this.doorFrameShown === 0) {
       this.furniture = layoutToFurnitureInstances(this.layout.furniture);
       return;
     }
@@ -971,6 +1039,13 @@ export class OfficeState {
     const modifiedFurniture: PlacedFurniture[] = this.layout.furniture.map((item) => {
       const entry = getCatalogEntry(item.type);
       if (!entry) return item;
+      if (door && item.uid === door.uid) {
+        // The entrance shows the opening frame its openness calls for.
+        const frames = getAnimationFrames(getOnStateType(item.type)) ?? [];
+        return this.doorFrameShown > 0 && frames.length > 0
+          ? { ...item, type: frames[Math.min(frames.length, this.doorFrameShown) - 1] }
+          : item;
+      }
       // Check if any tile of this furniture overlaps an auto-on tile
       for (let dr = 0; dr < entry.footprintH; dr++) {
         for (let dc = 0; dc < entry.footprintW; dc++) {
@@ -1218,7 +1293,8 @@ export class OfficeState {
    */
   startConversation(fromId: number, toId: number, summary?: string): void {
     const ch = this.characters.get(fromId);
-    if (!ch || ch.isSubagent || fromId === toId || !this.characters.has(toId)) return;
+    const to = this.characters.get(toId);
+    if (!ch || ch.isSubagent || fromId === toId || !to || isLeaving(to) || isLeaving(ch)) return;
     if (requestVisit(ch, { targetId: toId, summary }) === 'start') {
       this.startVisit(ch, { targetId: toId, summary });
     }
@@ -1387,7 +1463,8 @@ export class OfficeState {
     const ch = this.characters.get(id);
     const seatUid = seatOwnedBy(this.layout, this.sessionNames.get(id));
     const seat = seatUid ? this.seats.get(seatUid) : undefined;
-    if (!ch || ch.isSubagent || !seatUid || !seat || ch.seatId === seatUid) return null;
+    if (!ch || ch.isSubagent || isLeaving(ch) || !seatUid || !seat || ch.seatId === seatUid)
+      return null;
     // Whoever sits there swaps: it takes the owner's old seat (or any free one).
     const sitter = seat.assigned
       ? [...this.characters.values()].find((c) => c.seatId === seatUid)
@@ -1435,7 +1512,24 @@ export class OfficeState {
     const prevFrame = Math.floor(this.furnitureAnimTimer / FURNITURE_ANIM_INTERVAL_SEC);
     this.furnitureAnimTimer += dt;
     const newFrame = Math.floor(this.furnitureAnimTimer / FURNITURE_ANIM_INTERVAL_SEC);
-    if (newFrame !== prevFrame) {
+    // The entrance door swings toward open while someone passes through
+    const door = this.entrance();
+    let doorMoved = false;
+    if (door) {
+      this.doorOpenness = advanceOpenness(
+        this.doorOpenness,
+        doorWanted(this.characters.values(), door),
+        dt,
+      );
+      const frames =
+        getAnimationFrames(
+          getOnStateType(this.layout.furniture.find((f) => f.uid === door.uid)?.type ?? ''),
+        ) ?? [];
+      const frame = doorFrame(this.doorOpenness, frames.length);
+      doorMoved = frame !== this.doorFrameShown;
+      this.doorFrameShown = frame;
+    }
+    if (newFrame !== prevFrame || doorMoved) {
       this.rebuildFurnitureInstances();
     }
 
@@ -1461,6 +1555,17 @@ export class OfficeState {
         continue; // skip normal FSM while the effect is (or just was) active
       }
 
+      if (ch.doorway) {
+        // Coming in or going out through the entrance replaces the FSM.
+        const e = this.entrance();
+        const r = e ? advanceDoorway(ch, e, this.doorOpenness, dt, walkFrame) : 'timeout';
+        if (r === 'entered') this.walkToSeat(ch);
+        if (r === 'out' || r === 'timeout') {
+          ch.doorway = undefined;
+          startMatrixEffect(ch, 'despawn');
+        }
+        continue;
+      }
       if (ch.reportTimer !== undefined && (ch.reportTimer -= dt) <= 0) {
         ch.visit = undefined; // never got there: vanish where it stands
         startMatrixEffect(ch, 'despawn');
@@ -1472,7 +1577,9 @@ export class OfficeState {
         const target = this.characters.get(ch.visit.targetId);
         const reported = advanceVisit(ch, target, dt, walkFrame) === 'done';
         if (reported && ch.reportTimer !== undefined) {
-          startMatrixEffect(ch, 'despawn'); // a sub-agent's report is its last act
+          // A sub-agent's report is its last act: out through the door if it
+          // is close enough, else it vanishes where it stands.
+          if (!this.leaveViaDoor(ch, SUBAGENT_DOOR_MAX_TILES)) startMatrixEffect(ch, 'despawn');
         } else if (reported) {
           const next = ch.visitQueue?.shift();
           if (next) this.startVisit(ch, next);

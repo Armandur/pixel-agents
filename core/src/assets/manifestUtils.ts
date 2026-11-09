@@ -48,6 +48,8 @@ export interface FurnitureManifest {
   playSpots?: PlaySpot[];
   /** Players needed to start (default 1). */
   minPlayers?: number;
+  /** A door characters walk through (its ON frames are the opening, by openness). */
+  door?: boolean;
   // If type is 'asset', these fields are present:
   /** 'autotile': `file` is a 4x4 sheet of 16x16 pieces, piece index = neighbour
    *  mask (N=1, E=2, S=4, W=8, row-major), placed as 1x1 items that join up. */
@@ -84,6 +86,7 @@ export interface InheritedProps {
   tags?: string[];
   playSpots?: PlaySpot[];
   minPlayers?: number;
+  door?: boolean;
 }
 
 export interface FurnitureAsset {
@@ -111,6 +114,7 @@ export interface FurnitureAsset {
   tags?: string[];
   playSpots?: PlaySpot[];
   minPlayers?: number;
+  door?: boolean;
   /** Joins with same-type neighbours; sprites `${id}#${mask}` carry the pieces. */
   autoTile?: boolean;
 }
@@ -164,6 +168,7 @@ export function flattenManifest(node: ManifestNode, inherited: InheritedProps): 
         ...(inherited.tags?.length ? { tags: inherited.tags } : {}),
         ...(inherited.playSpots ? { playSpots: inherited.playSpots } : {}),
         ...(inherited.minPlayers ? { minPlayers: inherited.minPlayers } : {}),
+        ...(inherited.door ? { door: true } : {}),
       },
     ];
   }
