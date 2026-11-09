@@ -18,9 +18,20 @@ beforeAll(() => {
     { ...base, id: 'MUG', category: 'decor', canPlaceOnSurfaces: true },
     { ...base, id: 'CLOCK', category: 'wall', canPlaceOnWalls: true },
     { ...base, id: 'CHAIR', category: 'chairs' },
+    { ...base, id: 'RUG', category: 'decor', footprintW: 3, footprintH: 2, backgroundTiles: 2 },
+    { ...base, id: 'SOFA', category: 'chairs', footprintW: 1, footprintH: 2 },
   ];
   assert.ok(
-    buildDynamicCatalog({ catalog, sprites: { MUG: [['m']], CLOCK: [['c']], CHAIR: [['s']] } }),
+    buildDynamicCatalog({
+      catalog,
+      sprites: {
+        MUG: [['m']],
+        CLOCK: [['c']],
+        CHAIR: [['s']],
+        RUG: [['r'], ['r']],
+        SOFA: [['f'], ['f']],
+      },
+    }),
   );
 });
 
@@ -38,6 +49,12 @@ test('a nudge moves the drawing by half a tile at most, and never the footprint'
   assert.deepEqual(l.furniture[0].nudge, { x: 8, y: 8 });
   const [inst] = layoutToFurnitureInstances(l.furniture);
   assert.deepEqual([inst.x, inst.y], [16 + 8, 16 + 8]);
+  const [plain] = layoutToFurnitureInstances(layout('MUG').furniture);
+  assert.equal(
+    inst.zY,
+    plain.zY,
+    'drawn lower, but sorted where it stands (a rug stays under its table)',
+  );
   assert.ok(getBlockedTiles(l.furniture).has('1,1'));
 });
 
@@ -50,4 +67,12 @@ test('wall items move only sideways, and chairs stay on the grid', () => {
   assert.deepEqual(nudgeFurniture(layout('CLOCK'), 'a', 8, 8).furniture[0].nudge, { x: 8, y: 0 });
   const chair = layout('CHAIR');
   assert.equal(nudgeFurniture(chair, 'a', 8, 0), chair);
+});
+
+test('a rug lies under a sofa standing on the same rows', () => {
+  const [rug, sofa] = layoutToFurnitureInstances([
+    { uid: 'r', type: 'RUG', col: 1, row: 1 },
+    { uid: 's', type: 'SOFA', col: 1, row: 1 },
+  ]);
+  assert.ok(rug.zY < sofa.zY);
 });

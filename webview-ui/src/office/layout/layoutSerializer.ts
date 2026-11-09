@@ -47,10 +47,15 @@ export function layoutToFurnitureInstances(furniture: PlacedFurniture[]): Furnit
   for (const item of furniture) {
     const entry = getCatalogEntry(item.type);
     if (!entry) continue;
+    // A nudge moves only where the sprite is drawn, never its place in the
+    // depth order: a rug nudged down must stay under the table on it.
     const x = item.col * TILE_SIZE + (item.nudge?.x ?? 0);
     const y = item.row * TILE_SIZE + (item.nudge?.y ?? 0);
     const spriteH = entry.sprite.length;
-    let zY = y + spriteH;
+    let zY = item.row * TILE_SIZE + spriteH;
+    // Flat floor decor (a rug: every footprint row is background, walked
+    // over) lies under everything standing on or beside it.
+    if ((entry.backgroundTiles ?? 0) >= entry.footprintH) zY = item.row * TILE_SIZE;
 
     // Chair z-sorting: ensure characters sitting on chairs render correctly
     if (entry.category === 'chairs') {
