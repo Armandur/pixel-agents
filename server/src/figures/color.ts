@@ -73,6 +73,11 @@ function hsl2rgb(h: number, s: number, l: number): [number, number, number] {
   return [f(0) * 255, f(8) * 255, f(4) * 255].map(Math.round) as [number, number, number];
 }
 
+/** HSL saturation (0-1) of a colour. */
+export function saturation(h: string): number {
+  return rgb2hsl(...unhex(h))[1];
+}
+
 /** Rotate a colour's hue; greys (saturation <= 0.08) stay as they are. */
 export function shiftHex(h: string, hue: number): string {
   if (!hue) return h;

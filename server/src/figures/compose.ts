@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { PNG } from 'pngjs';
 
-import { hex, lerpHex, lum, seededRandom, shiftHex, unhex } from './color.js';
+import { hex, lerpHex, lum, saturation, seededRandom, shiftHex, unhex } from './color.js';
 
 /**
  * Generated figures: a session name seeds a character composed from the
@@ -30,12 +30,16 @@ export interface FigureLayers {
   outfits: Layer[];
   skinMaps: Array<Record<string, string>>;
   bodyCols: Set<string>;
+  /** Per hair layer: each colour's step (0 dark … 3 light) on a hair tone ramp. */
+  hairLevels: Array<Record<string, number>>;
 }
 interface Traits {
   skin: number;
   outfit: number;
   hair: number;
   outfitHue: number;
+  hairTone: number;
+  fabric: number;
 }
 interface Ramps {
   shirt: string[];
@@ -88,6 +92,78 @@ const PANTS_LV: Record<string, number> = { '0f0c13': 0, '1d1718': 1, '2a2320': 2
 
 const read = (file: string) => PNG.sync.read(fs.readFileSync(file));
 
+/**
+ * Natural hair tones, dark → light, one picked per seed. A hair layer's own
+ * shades are mapped onto the tone by brightness, so its shading survives;
+ * near-black outline pixels are kept as drawn.
+ */
+const HAIR_TONES: string[][] = [
+  ['1a1414', '2b2222', '3d3030', '524444'], // black
+  ['2e1c12', '4a2e1c', '64402a', '7e5638'], // dark brown
+  ['4a2c18', '6e4426', '8f5c36', 'ad7a4c'], // brown
+  ['5a2416', '82361e', 'a54b28', 'c2683a'], // auburn
+  ['7a2e14', 'a8461c', 'cc6428', 'e4884a'], // ginger
+  ['6e5228', '927036', 'b38f4c', 'cfae6a'], // dark blonde
+  ['8f7038', 'b8964c', 'd8b866', 'eed88e'], // blonde
+  ['4f4f55', '75757c', '9c9ca3', 'c4c4ca'], // grey
+  ['8e8e96', 'b4b4bc', 'd6d6dc', 'f0f0f4'], // white
+];
+/**
+ * Fabrics for an outfit's white and light-grey cloth (which a hue shift
+ * cannot colour), dark → light; null keeps the cloth white. Saturated cloth
+ * keeps the seed's hue shift instead.
+ */
+const FABRICS: Array<string[] | null> = [
+  ['1f2a4a', '2c3c66', '3d5288', '5670a8'], // navy
+  ['1e3a26', '2b5236', '3c6e48', '58905f'], // forest
+  ['4a1622', '66202f', '86303f', 'a84a58'], // burgundy
+  ['7a5a14', '9c761e', 'bf952e', 'd9b24a'], // mustard
+  ['14464a', '1e6066', '2c7e84', '46a0a4'], // teal
+  ['36204e', '4a2e6a', '62408a', '7e5ca8'], // purple
+  ['4a4a1e', '62622a', '7c7c3a', '9a9a52'], // olive
+  ['3a6a96', '4e86b4', '6aa2cc', '90c0e2'], // sky
+  ['8a3a5a', 'a84c70', 'c4688a', 'dc8ca8'], // rose
+  ['2a2a30', '3a3a42', '4e4e58', '66666f'], // charcoal
+  null, // white
+  null,
+];
+/** Greyer and lighter than these is "white cloth" that takes the fabric. */
+const PALE_SATURATION = 0.12;
+const PALE_LUM = 120;
+
+function clothColor(t: Traits, h: string): string {
+  const fabric = FABRICS[t.fabric];
+  if (fabric && saturation(h) <= PALE_SATURATION && lum(h) >= PALE_LUM) {
+    const step = Math.min(3, Math.max(0, Math.round(((lum(h) - PALE_LUM) / (255 - PALE_LUM)) * 3)));
+    return fabric[step];
+  }
+  return shiftHex(h, t.outfitHue);
+}
+
+/** Darker than this (luminance) is outline, not hair colour. */
+const HAIR_OUTLINE_LUM = 40;
+
+/** Rank a hair layer's colours by brightness into the 4 steps of a tone. */
+function hairLevelsOf(layer: Layer): Record<string, number> {
+  const colors = new Set<string>();
+  for (let col = 0; col < 24; col++) {
+    for (const h of metroCell(layer.img, layer.row, col)) {
+      if (h && lum(h) >= HAIR_OUTLINE_LUM) colors.add(h);
+    }
+  }
+  const sorted = [...colors].sort((a, b) => lum(a) - lum(b));
+  const levels: Record<string, number> = {};
+  sorted.forEach((h, i) => {
+    levels[h] = sorted.length === 1 ? 2 : Math.round((i / (sorted.length - 1)) * 3);
+  });
+  return levels;
+}
+
+function toneHair(layers: FigureLayers, t: Traits, h: string): string {
+  const level = layers.hairLevels[t.hair][h];
+  return level === undefined ? h : HAIR_TONES[t.hairTone][level];
+}
+
 /** Load the layers once; null when the figure assets are missing. */
 export function loadFigureLayers(assetsRoot: string): FigureLayers | null {
   const dir = path.join(assetsRoot, 'assets', 'figures', 'metrocity');
@@ -108,7 +184,14 @@ export function loadFigureLayers(assetsRoot: string): FigureLayers | null {
     ...[0, 1, 2, 3].map((r) => ({ img: suit, row: r, hat: r !== 2 })),
     ...[0, 1, 2, 3, 4].map((r) => ({ img: suit1, row: r, hat: false })),
   ];
-  return { body, donor: read(donorFile), hairs, outfits, ...skinTables(body) };
+  return {
+    body,
+    donor: read(donorFile),
+    hairs,
+    outfits,
+    ...skinTables(body),
+    hairLevels: hairs.map(hairLevelsOf),
+  };
 }
 
 /** Skin: char_5's skin is Metro City row 1, so map row 1 → row r pixel by pixel. */
@@ -149,6 +232,9 @@ function traitsFor(layers: FigureLayers, seed: string): Traits {
     outfit: pick(layers.outfits.length),
     hair: pick(layers.hairs.length),
     outfitHue: pick(12) * 30,
+    // Drawn last, so the earlier traits of every seed stay as they were.
+    hairTone: pick(HAIR_TONES.length),
+    fabric: pick(FABRICS.length),
   };
 }
 
@@ -232,13 +318,13 @@ function ramp4(list: string[]): string[] | null {
   return out;
 }
 
-function outfitRamps(layers: FigureLayers, o: Layer, hue: number): Ramps {
+function outfitRamps(layers: FigureLayers, o: Layer, t: Traits): Ramps {
   const stand = [0, 1, 2].map((d) => metroCell(o.img, o.row, DIR_BASE[d] + STAND));
   const torso = colorsIn(layers, stand, 18, 23, 3);
   const torsoSet = new Set(torso);
   const legsOnly = colorsIn(layers, stand, 24, 28, 2).filter((h) => !torsoSet.has(h));
   const feet = colorsIn(layers, stand, 29, 31, 2);
-  const sh = (l: string[]) => l.map((h) => shiftHex(h, hue)).sort((a, b) => lum(a) - lum(b));
+  const sh = (l: string[]) => l.map((h) => clothColor(t, h)).sort((a, b) => lum(a) - lum(b));
   const shirt = ramp4(sh(torso))!;
   return {
     shirt,
@@ -300,7 +386,8 @@ function posedCell(layers: FigureLayers, d: number, f: number, t: Traits, ramps:
   } else {
     const hr = layers.hairs[t.hair];
     const hc = metroCell(hr.img, hr.row, DIR_BASE[d] + STAND);
-    for (let y = 0; y < OH; y++) for (let x = 0; x < OW; x++) put(x, y + dyh, hc[y * OW + x]);
+    const tone = (h: string | null) => h && toneHair(layers, t, h);
+    for (let y = 0; y < OH; y++) for (let x = 0; x < OW; x++) put(x, y + dyh, tone(hc[y * OW + x]));
   }
   // 4. Glasses in the reading frames: what the donor's reading frame has and its
   //    typing frame lacks, in the head's rows.
@@ -337,19 +424,25 @@ function walkCell(layers: FigureLayers, d: number, f: number, t: Traits): Cell {
   const lay = (c: Cell, shift: boolean) => {
     for (let i = 0; i < c.length; i++) {
       const h = c[i];
-      if (h) out[i] = shift ? shiftHex(h, t.outfitHue) : h;
+      if (h) out[i] = shift ? clothColor(t, h) : h;
     }
   };
   lay(metroCell(layers.body, t.skin, col), false);
   lay(metroCell(o.img, o.row, col), true);
-  if (!o.hat) lay(metroCell(hr.img, hr.row, col), false);
+  if (!o.hat) {
+    const hc = metroCell(hr.img, hr.row, col);
+    for (let i = 0; i < hc.length; i++) {
+      const h = hc[i];
+      if (h) out[i] = toneHair(layers, t, h);
+    }
+  }
   return out;
 }
 
 /** The figure for `seed` as a 112x96 PNG in the office character format. */
 export function composeFigure(layers: FigureLayers, seed: string): Buffer {
   const t = traitsFor(layers, seed);
-  const ramps = outfitRamps(layers, layers.outfits[t.outfit], t.outfitHue);
+  const ramps = outfitRamps(layers, layers.outfits[t.outfit], t);
   const png = new PNG({ width: 7 * OW, height: 3 * OH });
   for (let d = 0; d < 3; d++) {
     for (let f = 0; f < 7; f++) {
