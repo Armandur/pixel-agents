@@ -1,3 +1,5 @@
+import type { ProgressCounts } from './progress.js';
+
 /**
  * Shared data types used across extension, server, and webview.
  * Extracted from src/types.ts, webview-ui/src/office/types.ts, shared/assets/types.ts.
@@ -39,6 +41,8 @@ export interface PersistedAgent {
   hueShift?: number;
   /** Seed of the agent's generated figure (server/src/figures), fixed at first sight. */
   figureSeed?: string;
+  /** XP, work counts and achievements (core/src/progress.ts). */
+  progress?: ProgressCounts;
 }
 
 /** Agent seat assignment with visual identity

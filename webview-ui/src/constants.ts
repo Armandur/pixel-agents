@@ -331,6 +331,8 @@ export const INTRO_BUBBLE_Z_INDEX = 45;
 export const OVERLAY_LABEL_Z_INDEX = 41;
 export const OVERLAY_LABEL_SELECTED_Z_INDEX = 42;
 export const OVERLAY_BUBBLE_Z_INDEX = 43;
+/** The achievement notice: over the bubbles, under the intro. */
+export const ACHIEVEMENT_TOAST_Z_INDEX = 44;
 /** The greeter stands this many tiles in from the office's bottom-left corner
  *  (target tile (margin, rows-1-margin); nearest walkable tile if blocked). */
 export const GREETER_TILE_MARGIN = 3;
@@ -712,3 +714,19 @@ export const QUOTA_WEEKDAYS = ['sön', 'mån', 'tis', 'ons', 'tors', 'fre', 'lö
 /** Screen texts. */
 export const QUOTA_TEXT_UNKNOWN = 'okänt';
 export const QUOTA_TEXT_NO_5H = 'saknas';
+
+// ── Levels and achievements (core/src/progress.ts) ───────────
+/** How long "Lvl N!" stays over a figure that went up a level. */
+export const LEVEL_UP_BUBBLE_SEC = 4;
+/** How long an achievement notice stays at the top of the office. */
+export const ACHIEVEMENT_TOAST_SEC = 5;
+/** Achievement names as the notice and the card's tooltip show them. */
+export const ACHIEVEMENT_LABELS: Record<string, string> = {
+  'first-tool': 'Första verktyget',
+  'tools-100': '100 verktyg',
+  'tools-1000': '1000 verktyg',
+  'first-subagent': 'Första underagenten',
+  'team-lead': 'Lagledare',
+  marathon: 'Maratonpass',
+  'night-owl': 'Nattuggla',
+};

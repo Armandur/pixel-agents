@@ -34,6 +34,20 @@ import { transport } from '../transport/index.js';
 const isHeadlessAgent = (isExternal: boolean | undefined): boolean =>
   isExternal === true && !isBrowserRuntime;
 
+/** An agent's levels and achievements, as the last agentProgress said. */
+export interface AgentProgressInfo {
+  xp: number;
+  level: number;
+  achievements: string[];
+}
+
+/** One achievement to announce: who earned which. `seq` keys the notice. */
+export interface AchievementNotice {
+  seq: number;
+  agentId: number;
+  achievement: string;
+}
+
 export interface SubagentCharacter {
   id: number;
   parentAgentId: number;
@@ -103,6 +117,12 @@ interface ExtensionMessageState {
   agentCrowned: Record<number, boolean>;
   /** Epoch ms since each idle agent went idle (agentIdleSince); absent = working. */
   agentIdleSince: Record<number, number>;
+  /** XP, level and achievements per agent (agentProgress). */
+  agentProgress: Record<number, AgentProgressInfo>;
+  /** Achievements earned while the office is open, oldest first, for the notice. */
+  achievementNotices: AchievementNotice[];
+  /** The notice at the head of the queue has been shown. */
+  dismissAchievementNotice: () => void;
   /** Latest usage quota per provider id (quotaUpdate), for the TV screens. */
   quotas: Record<string, QuotaInfo>;
   subagentTools: Record<number, Record<string, ToolActivity[]>>;
@@ -198,6 +218,14 @@ export function useExtensionMessages(
   const [agentCrowned, setAgentCrowned] = useState<Record<number, boolean>>({});
   const [, setAgentFigures] = useState<Record<number, string>>({});
   const [agentIdleSince, setAgentIdleSince] = useState<Record<number, number>>({});
+  const [agentProgress, setAgentProgress] = useState<Record<number, AgentProgressInfo>>({});
+  const progressRef = useRef<Record<number, AgentProgressInfo>>({});
+  const [achievementNotices, setAchievementNotices] = useState<AchievementNotice[]>([]);
+  const noticeSeq = useRef(0);
+  const dismissAchievementNotice = useCallback(
+    () => setAchievementNotices((prev) => prev.slice(1)),
+    [],
+  );
   const [quotas, setQuotas] = useState<Record<string, QuotaInfo>>({});
   const markSeenActivity = (id: number) =>
     setAgentSeenActivity((prev) => (prev[id] ? prev : { ...prev, [id]: true }));
@@ -362,6 +390,12 @@ export function useExtensionMessages(
         }
       } else if (msg.type === 'agentCreated') {
         const id = msg.id as number;
+        // Born while this office watches: everything it earns is news,
+        // its first achievement included (a reload's agents get no baseline).
+        progressRef.current = {
+          ...progressRef.current,
+          [id]: progressRef.current[id] ?? { xp: 0, level: 1, achievements: [] },
+        };
         const directoryName = msg.directoryName as string | undefined;
         const isTeammate = msg.isTeammate as boolean | undefined;
         const teammateName = msg.teammateName as string | undefined;
@@ -909,6 +943,33 @@ export function useExtensionMessages(
           else next[id] = since;
           return next;
         });
+      } else if (msg.type === 'agentProgress') {
+        const id = msg.id as number;
+        const info: AgentProgressInfo = {
+          xp: msg.xp as number,
+          level: msg.level as number,
+          achievements: (msg.achievements as string[]) ?? [],
+        };
+        // The message carries state, not events: a level or achievement is
+        // new only against what this office already knew. The first message
+        // per agent (a reload's re-send) celebrates nothing.
+        const prev = progressRef.current[id];
+        progressRef.current = { ...progressRef.current, [id]: info };
+        if (prev) {
+          if (info.level > prev.level) os.showLevelUp(id, info.level);
+          const fresh = info.achievements.filter((a) => !prev.achievements.includes(a));
+          if (fresh.length > 0) {
+            setAchievementNotices((q) => [
+              ...q,
+              ...fresh.map((achievement) => ({
+                seq: ++noticeSeq.current,
+                agentId: id,
+                achievement,
+              })),
+            ]);
+          }
+        }
+        setAgentProgress(progressRef.current);
       } else if (msg.type === 'agentContextUsage') {
         const id = msg.id as number;
         os.setAgentContext(id, msg.contextTokens as number, msg.maxContextTokens as number);
@@ -945,6 +1006,9 @@ export function useExtensionMessages(
     agentSessionNames,
     agentCrowned,
     agentIdleSince,
+    agentProgress,
+    achievementNotices,
+    dismissAchievementNotice,
     quotas,
     subagentTools,
     subagentCharacters,

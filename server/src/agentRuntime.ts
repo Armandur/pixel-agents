@@ -41,6 +41,7 @@ import { HookEventHandler } from './hookEventHandler.js';
 import { IdleSinceTracker } from './idleSince.js';
 import { assignPaletteIfNeeded } from './paletteAssigner.js';
 import { PathSet, pathsMatch } from './pathKey.js';
+import { ProgressTracker } from './progress.js';
 import { hookProviders, observedProviders } from './providers/index.js';
 import { QuotaTracker } from './quota.js';
 import { repairedDirectoryName } from './sessionDirectoryName.js';
@@ -84,6 +85,7 @@ export class AgentRuntime {
   private quotaTimer: ReturnType<typeof setInterval> | null = null;
   private readonly quota: QuotaTracker;
   private readonly idleSince: IdleSinceTracker;
+  private readonly progress: ProgressTracker;
 
   // Configuration refs (mutable, shared with scanners)
   readonly watchAllSessions = { current: false };
@@ -106,6 +108,10 @@ export class AgentRuntime {
     setFileWatcherHookProvider(provider);
     this.subagentWatch = new SubagentWatch(store);
     this.idleSince = new IdleSinceTracker(store);
+    this.progress = new ProgressTracker(
+      store,
+      new Set([...hookProviders, ...observedProviders].flatMap((p) => [...p.subagentToolNames])),
+    );
     this.quota = new QuotaTracker(store, [...hookProviders, ...observedProviders]);
     setSubagentWatch(this.subagentWatch);
     if (provider.team) {
@@ -558,6 +564,7 @@ export class AgentRuntime {
         palette: p.palette,
         hueShift: p.hueShift,
         figureSeed: p.figureSeed,
+        progress: p.progress,
       });
 
       assignPaletteIfNeeded(agent, this.store);
@@ -602,6 +609,7 @@ export class AgentRuntime {
     this.hookEventHandler.dispose();
     this.subagentWatch.dispose();
     this.idleSince.dispose();
+    this.progress.dispose();
 
     if (this.projectScanTimer.current) {
       clearInterval(this.projectScanTimer.current);

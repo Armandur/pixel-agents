@@ -103,6 +103,7 @@ components:
         - $ref: '#/components/schemas/AgentSessionName'
         - $ref: '#/components/schemas/AgentFigure'
         - $ref: '#/components/schemas/AgentIdleSince'
+        - $ref: '#/components/schemas/AgentProgress'
         - $ref: '#/components/schemas/AgentConversation'
         - $ref: '#/components/schemas/QuotaUpdate'
         # Layout
@@ -483,6 +484,30 @@ components:
         since:
           type: integer
           description: Epoch milliseconds.
+
+    AgentProgress:
+      description: |
+        An agent's levels and achievements (core/src/progress.ts): XP counted
+        from its work since the feature started, the level that XP reaches,
+        and the ids of the achievements it has earned. Sent on every change and
+        re-sent on webviewReady; the client tells a new level or achievement
+        from the previous message, so the message itself carries no events.
+      type: object
+      additionalProperties: false
+      required: [type, id, xp, level, achievements]
+      properties:
+        type:
+          const: agentProgress
+        id:
+          type: integer
+        xp:
+          type: integer
+        level:
+          type: integer
+        achievements:
+          type: array
+          items:
+            type: string
 
     AgentSessionName:
       description: |

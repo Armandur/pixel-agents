@@ -28,6 +28,7 @@ export type ServerMessage =
   | AgentSessionName
   | AgentFigure
   | AgentIdleSince
+  | AgentProgress
   | AgentConversation
   | QuotaUpdate
   | LayoutLoaded
@@ -233,6 +234,14 @@ export interface AgentIdleSince {
   type: 'agentIdleSince';
   id: number;
   since?: number;
+}
+
+export interface AgentProgress {
+  type: 'agentProgress';
+  id: number;
+  xp: number;
+  level: number;
+  achievements: string[];
 }
 
 export interface AgentConversation {

@@ -1,6 +1,7 @@
 import type { MouseEvent as ReactMouseEvent } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { levelProgress } from '../../../core/src/progress.js';
 import type {
   AgentActivity,
   AgentAppearance,
@@ -23,6 +24,7 @@ import {
 import type { OfficeState } from '../office/engine/officeState.js';
 import type { ToolActivity } from '../office/types.js';
 import type { TerminalConnectionStatus } from '../terminal/terminalClient.js';
+import type { AgentProgressInfo } from './useExtensionMessages.js';
 
 /** A character not (yet) in the office — the mug shot falls back to palette 0. */
 const DEFAULT_APPEARANCE: AgentAppearance = { palette: 0, hueShift: 0 };
@@ -38,6 +40,7 @@ interface TerminalDrawerInputs {
   agentSessionNames: Record<number, string>;
   agentCrowned: Record<number, boolean>;
   agentIdleSince: Record<number, number>;
+  agentProgress: Record<number, AgentProgressInfo>;
 }
 
 export interface TerminalDrawerController {
@@ -107,6 +110,7 @@ export function useTerminalDrawer({
   agentSessionNames,
   agentCrowned,
   agentIdleSince,
+  agentProgress,
 }: TerminalDrawerInputs): TerminalDrawerController {
   const [activeAgentId, setActiveAgentId] = useState<number | null>(null);
   const [lastOpened, setLastOpened] = useState<{ agentId: number; seq: number } | null>(null);
@@ -245,9 +249,14 @@ export function useTerminalDrawer({
           agentIdleSince[id],
           Date.now(),
         ),
+        level: agentProgress[id] && {
+          level: agentProgress[id].level,
+          progress: levelProgress(agentProgress[id].xp),
+          achievements: agentProgress[id].achievements,
+        },
       };
     },
-    [getOfficeState, agentTools, agentSessionNames, agentCrowned, agentIdleSince],
+    [getOfficeState, agentTools, agentSessionNames, agentCrowned, agentIdleSince, agentProgress],
   );
 
   const hover = useCallback(

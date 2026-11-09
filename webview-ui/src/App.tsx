@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 
 import { toMajorMinor } from './changelogData.js';
+import { AchievementToast } from './components/AchievementToast.js';
 import { AgentCardBar } from './components/AgentCardBar.js';
 import { BottomToolbar } from './components/BottomToolbar.js';
 import { groupSubagentsByParent } from './components/cardBar.js';
@@ -93,6 +94,9 @@ function App() {
     agentSessionNames,
     agentCrowned,
     agentIdleSince,
+    agentProgress,
+    achievementNotices,
+    dismissAchievementNotice,
     quotas,
     subagentTools,
     subagentCharacters,
@@ -174,6 +178,7 @@ function App() {
     agentSessionNames,
     agentCrowned,
     agentIdleSince,
+    agentProgress,
   });
 
   // Sub-agents per main agent, for the row on each main agent's card.
@@ -498,6 +503,12 @@ function App() {
       ref={containerRef}
       className={`relative h-full overflow-hidden ${isMobile ? 'w-full' : 'flex-1 min-w-0'}`}
     >
+      <AchievementToast
+        notices={achievementNotices}
+        nameFor={(id) => terminalDrawer.labelFor(id).name}
+        onDone={dismissAchievementNotice}
+        belowTopButtons={isMobile}
+      />
       <OfficeCanvas
         officeState={officeState}
         onClick={handleClick}

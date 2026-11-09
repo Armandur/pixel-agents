@@ -213,7 +213,34 @@ export function ToolOverlay({
 
         // Mingling in the lounge: a short made-up phrase, same look and place
         // as the real talk bubble (loungeChatLines never overlaps that one).
-        const chatLine = loungeChat.get(id);
+        // Just went up a level: "Lvl N!" in gold where the chatter would be
+        // (it wins over the chatter, a real talk bubble wins over it).
+        const levelUp = ch.visit?.phase === 'talking' ? undefined : officeState.levelUps.get(id);
+        if (levelUp) {
+          const upSittingOff = ch.state === CharacterState.TYPE ? CHARACTER_SITTING_OFFSET_PX : 0;
+          bubbleNode = (
+            <>
+              {bubbleNode}
+              <div
+                className="absolute -translate-x-1/2 -translate-y-full pointer-events-none pixel-panel border-gold text-gold px-8 py-4 text-base leading-tight whitespace-nowrap"
+                style={{
+                  left: project.toScreenX(ch.x),
+                  top:
+                    project.toScreenY(ch.y + upSittingOff - TOOL_OVERLAY_VERTICAL_OFFSET) -
+                    LOUNGE_CHAT_BUBBLE_LIFT_PX,
+                  opacity: Math.min(1, levelUp.timer / BUBBLE_FADE_DURATION_SEC),
+                  zIndex: OVERLAY_BUBBLE_Z_INDEX,
+                }}
+                data-testid="level-up-bubble"
+                data-agent-id={id}
+              >
+                Lvl {levelUp.level}!
+              </div>
+            </>
+          );
+        }
+
+        const chatLine = levelUp ? undefined : loungeChat.get(id);
         if (chatLine !== undefined) {
           const chatSittingOff = ch.state === CharacterState.TYPE ? CHARACTER_SITTING_OFFSET_PX : 0;
           bubbleNode = (

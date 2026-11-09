@@ -11,6 +11,7 @@ import {
   GREETER_TILE_MARGIN,
   INACTIVE_SEAT_TIMER_MIN_SEC,
   INACTIVE_SEAT_TIMER_RANGE_SEC,
+  LEVEL_UP_BUBBLE_SEC,
   MAX_PET_ID_LENGTH,
   PET_HIT_HALF_WIDTH,
   PET_HIT_HEIGHT,
@@ -1382,6 +1383,13 @@ export class OfficeState {
   }
 
   /** Since when an agent has been idle (agentIdleSince); undefined = working. */
+  /** "Lvl N!" over figures that just went up a level: level and seconds left. */
+  levelUps = new Map<number, { level: number; timer: number }>();
+
+  showLevelUp(id: number, level: number): void {
+    this.levelUps.set(id, { level, timer: LEVEL_UP_BUBBLE_SEC });
+  }
+
   setAgentIdleSince(id: number, since: number | undefined): void {
     if (since === undefined) this.idleSinceById.delete(id);
     else this.idleSinceById.set(id, since);
@@ -1527,6 +1535,10 @@ export class OfficeState {
   }
 
   update(dt: number): void {
+    for (const [id, up] of this.levelUps) {
+      up.timer -= dt;
+      if (up.timer <= 0) this.levelUps.delete(id);
+    }
     // Furniture animation cycling
     const prevFrame = Math.floor(this.furnitureAnimTimer / FURNITURE_ANIM_INTERVAL_SEC);
     this.furnitureAnimTimer += dt;

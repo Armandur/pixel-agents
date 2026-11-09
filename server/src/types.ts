@@ -1,5 +1,7 @@
 import type * as vscode from 'vscode';
 
+import type { ProgressCounts } from '../../core/src/progress.js';
+
 export interface AgentState {
   id: number;
   sessionId: string;
@@ -28,6 +30,8 @@ export interface AgentState {
   crowned?: boolean;
   /** Seed of its generated figure: the session name as first seen. Persisted. */
   figureSeed?: string;
+  /** Work counted into XP and achievements (server/src/progress.ts). Persisted. */
+  progress?: ProgressCounts;
   /** Epoch ms since the agent went idle (waiting or done); undefined while working. Not persisted. */
   idleSince?: number;
   /** Timestamp of last JSONL data received (ms since epoch) */
@@ -129,4 +133,6 @@ export interface PersistedAgent {
   hueShift?: number;
   /** Seed of the agent's generated figure (server/src/figures), fixed at first sight. */
   figureSeed?: string;
+  /** XP, work counts and achievements (core/src/progress.ts). */
+  progress?: ProgressCounts;
 }

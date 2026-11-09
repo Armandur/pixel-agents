@@ -174,6 +174,7 @@ export class AgentStateStore {
         palette: agent.palette,
         hueShift: agent.hueShift,
         figureSeed: agent.figureSeed,
+        progress: agent.progress,
       });
     }
     this.adapter.saveAgents(persisted);

@@ -1,4 +1,4 @@
-import { CROWNED_NAME_COLOR, providerBadge } from '../constants.js';
+import { ACHIEVEMENT_LABELS, CROWNED_NAME_COLOR, providerBadge } from '../constants.js';
 import type { CardVariant, SubagentRef } from './cardBar.js';
 import { subagentRow } from './cardBar.js';
 import { CharacterMugShot } from './CharacterMugShot.js';
@@ -22,6 +22,14 @@ export interface AgentCardLabel {
   provider?: string;
   /** Session listed in config crownedSessions: gold name, sorted first. */
   crowned?: boolean;
+  /** Its level and how far into it (0-1), once the server reported any work. */
+  level?: { level: number; progress: number; achievements: string[] };
+}
+
+/** The level badge's and XP bar's tooltip: progress, then achievements. */
+function levelTitle(l: NonNullable<AgentCardLabel['level']>): string {
+  const names = l.achievements.map((a) => ACHIEVEMENT_LABELS[a] ?? a);
+  return `${Math.round(l.progress * 100)} % till Lvl ${l.level + 1}${names.length ? `\n${names.join(', ')}` : ''}`;
 }
 
 /** Agent activity reflected by the tab's status dot. */
@@ -132,10 +140,31 @@ export function AgentCard({
                 {badge.glyph}
               </span>
             )}
+            {label.level && (
+              <span
+                className="ml-auto shrink-0 bg-gold text-bg text-2xs leading-none px-4 py-1"
+                data-testid="agent-card-level"
+                title={levelTitle(label.level)}
+              >
+                Lvl {label.level.level}
+              </span>
+            )}
           </span>
           <span className="text-2xs text-text-muted overflow-hidden text-ellipsis whitespace-nowrap">
             {label.activity}
           </span>
+          {label.level && (
+            <span
+              className="block h-3 bg-bg-dark"
+              title={levelTitle(label.level)}
+              data-testid="agent-card-xp"
+            >
+              <span
+                className="block h-full bg-accent-bright"
+                style={{ width: `${Math.round(label.level.progress * 100)}%` }}
+              />
+            </span>
+          )}
           {subRow && (
             <button
               type="button"

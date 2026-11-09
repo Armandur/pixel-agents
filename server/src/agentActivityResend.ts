@@ -1,3 +1,4 @@
+import { levelForXp } from '../../core/src/progress.js';
 import type { AgentStateStore } from './agentStateStore.js';
 import { figureSprites } from './figures/index.js';
 import { hasPromotedBackgroundAgent } from './teamUtils.js';
@@ -42,6 +43,16 @@ export function resendAgentActivity(
         id,
         sessionName: agent.sessionName,
         crowned: !!agent.crowned,
+      });
+    }
+
+    if (agent.progress) {
+      send({
+        type: 'agentProgress',
+        id,
+        xp: agent.progress.xp,
+        level: levelForXp(agent.progress.xp),
+        achievements: [...agent.progress.achievements],
       });
     }
 
